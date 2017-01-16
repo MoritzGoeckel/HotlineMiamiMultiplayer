@@ -4,9 +4,7 @@ class Renderer{
         if(this.resources != undefined)
         {
             for(var index in players)
-            {
                 this.drawPlayer(players[index]);   
-            }
 
             this.drawPlayer(me);
 
@@ -33,6 +31,12 @@ class Renderer{
 
         this.sprites[player.id].position = player.pos;
         this.sprites[player.id].rotation = player.dir;
+    }
+
+    removeSprite(id)
+    {
+        this.stage.removeChild(this.sprites[id])
+        delete this.sprites[id];
     }
 
     constructor(players, map, pixi)

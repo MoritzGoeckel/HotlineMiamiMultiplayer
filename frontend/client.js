@@ -43,8 +43,15 @@ $(document).ready(function(){
     socket.on('player_update', function (data) {    
         for(var key in data)
         {
-            players[data.id][key] = data[key];           
+            if(players[data.id] != undefined)
+                players[data.id][key] = data[key];           
         }
+    });
+
+    socket.on('disconnected', function (data) {   
+        console.log("disconnected " + data.id);
+        render.removeSprite(data.id);
+        delete players[data.id];
     });
 
     //The keyboard

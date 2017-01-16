@@ -32,6 +32,7 @@ server.on('connection', function(socket){
     socket.on('disconnect', function(){
       players = players.filter(function(value){ return value != player; });
       console.log(player.id + " disconnected");
+      server.emit("disconnected", {id:player.id});
     });
 
     //Recieve update from player
@@ -82,7 +83,7 @@ setInterval(function() {
 setInterval(function() {
 
   players.forEach(function(player){
-        player.socket.volatile.broadcast.emit("player_full_info", player.serialize()); //To everyone except the player
+        player.socket.broadcast.emit("player_full_info", player.serialize()); //To everyone except the player
   });
 
 }, 1000 / 1);
