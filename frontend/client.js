@@ -29,7 +29,7 @@ $(document).ready(function(){
 
                 socket.emit("update", msg);
             }
-        }, 1000 / 30);
+        }, 1000 / 40);
     });
 
     var players = {};

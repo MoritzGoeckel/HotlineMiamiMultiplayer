@@ -77,7 +77,7 @@ setInterval(function() {
     }
   });
 
-}, 1000 / 25);
+}, 1000 / 40);
 
 //Send FULL INFO to other players
 setInterval(function() {
