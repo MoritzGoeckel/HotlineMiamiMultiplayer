@@ -31,12 +31,12 @@ function updateGame(players, me, map, keys, mouse)
             movement = vecSub(movement, courserToPlayer);
         }
         //A
-        if(keys["65"])
+        if(keys["68"])
         {
             movement = vecAdd(movement, vecOrtho(courserToPlayer));
         }
         //D
-        if(keys["68"])
+        if(keys["65"])
         {
             movement = vecSub(movement, vecOrtho(courserToPlayer));
         }
