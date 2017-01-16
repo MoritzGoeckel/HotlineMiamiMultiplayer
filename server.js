@@ -5,9 +5,9 @@ var Player = require('./server_includes/player.js');
 //Expose frontend
 var express = Express();
 express.use(Express.static('frontend'));
-express.listen(80, function () {
-  console.log('http on port 80');
-});//auch offen
+express.listen(63884, function () {
+  console.log('http on port 63884');
+});
 
 //Create socket server
 var server = Socket(64003);
