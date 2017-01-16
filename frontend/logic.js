@@ -17,38 +17,35 @@ function updateGame(players, me, map, keys, mouse)
         if(newDir != me.dir)
             changeMe("dir", newDir);
         
-        if(vecLen(courserToPlayer) > 10)
+        courserToPlayer = vecNorm(courserToPlayer);
+        var movement = {x:0, y:0};
+
+        //W
+        if(keys["87"] && vecLen(courserToPlayer) > 30)
         {
-            courserToPlayer = vecNorm(courserToPlayer);
-            var movement = {x:0, y:0};
+            movement = vecAdd(movement, courserToPlayer);
+        }
+        //S
+        if(keys["83"])
+        {
+            movement = vecSub(movement, courserToPlayer);
+        }
+        //A
+        if(keys["68"])
+        {
+            movement = vecAdd(movement, vecOrtho(courserToPlayer));
+        }
+        //D
+        if(keys["65"])
+        {
+            movement = vecSub(movement, vecOrtho(courserToPlayer));
+        }
 
-            //W
-            if(keys["87"])
-            {
-                movement = vecAdd(movement, courserToPlayer);
-            }
-            //S
-            if(keys["83"])
-            {
-                movement = vecSub(movement, courserToPlayer);
-            }
-            //A
-            if(keys["68"])
-            {
-                movement = vecAdd(movement, vecOrtho(courserToPlayer));
-            }
-            //D
-            if(keys["65"])
-            {
-                movement = vecSub(movement, vecOrtho(courserToPlayer));
-            }
-
-            if(movement.x != 0 || movement.y != 0)
-            {
-                movement = vecNorm(movement);
-                movement = vecMultScalar(movement, 3);
-                changeMe("pos", vecAdd(me.pos, movement));
-            }
+        if(movement.x != 0 || movement.y != 0)
+        {
+            movement = vecNorm(movement);
+            movement = vecMultScalar(movement, 3);
+            changeMe("pos", vecAdd(me.pos, movement));
         }
     }
     
