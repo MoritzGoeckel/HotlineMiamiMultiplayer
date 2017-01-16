@@ -16,9 +16,11 @@ console.log('tcp on port 2000');
 //All players
 var players = [];
 
+var lastPlayerID = 100;
+
 server.on('connection', function(socket){    
     //Player connects
-    var player = new Player("abc", {x:1, y:1}, 5, socket);
+    var player = new Player(lastPlayerID++, {x:Math.random() * 200, y:Math.random() * 200}, 0, socket);
     players.push(player);
 
     console.log(player.id + " connected");
@@ -85,9 +87,15 @@ setInterval(function() {
 
 }, 1000 / 1);
 
+setInterval(function(){
+  //Todo: Logic
+}, 1000 / 30);
+
 function validateInput(key, old_value, new_value)
 {
-  return true;
+  if(key != "id")
+    return true;
+    //Todo: More restrictions (movement etc)
 }
 
 //Display info

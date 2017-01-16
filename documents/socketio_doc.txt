@@ -12,3 +12,5 @@
 });*/
 
 //socket.emit('#msg', ""); //Just to socket
+
+http://pixijs.download/release/docs/index.html
