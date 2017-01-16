@@ -73,7 +73,7 @@ setInterval(function() {
         playerUpdateMsg.id = player.id;
 
         //Todo: Bundle the messages
-        player.socket.volatile.broadcast.emit("player_update", playerUpdateMsg); //To everyone except the player
+        player.socket.broadcast.emit("player_update", playerUpdateMsg); //To everyone except the player
     }
   });
 
