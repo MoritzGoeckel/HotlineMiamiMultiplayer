@@ -1,7 +1,7 @@
 $(document).ready(function(){
 
     //Connect
-    var socket = io.connect('http://localhost:2000');
+    var socket = io.connect('http://moritzg.serpens.uberspace.de:64003');
 
     //The player
     var me;

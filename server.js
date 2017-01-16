@@ -5,13 +5,13 @@ var Player = require('./server_includes/player.js');
 //Expose frontend
 var express = Express();
 express.use(Express.static('frontend'));
-express.listen(1000, function () {
-  console.log('http on port 1000');
-});
+express.listen(80, function () {
+  console.log('http on port 80');
+});//auch offen
 
 //Create socket server
-var server = Socket(2000);
-console.log('tcp on port 2000');
+var server = Socket(64003);
+console.log('tcp on port 64003');
 
 //All players
 var players = [];
