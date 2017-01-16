@@ -1,0 +1,12 @@
+Tasks:
+
+Client:
+    Change own data, send
+    recieve data
+    render
+    predict others
+
+Server:
+    Recieve data / Filter with restrictions
+    apply game logic
+    send updates

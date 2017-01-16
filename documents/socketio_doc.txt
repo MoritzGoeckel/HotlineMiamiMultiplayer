@@ -1,0 +1,14 @@
+//server.emit('some event', ""); //To all
+
+//socket.volatile.emit('bieber tweet', tweet); //Can be dropped
+
+//socket.broadcast.emit('user connected'); //All except the socket
+
+/*socket.on('ferret', function (msg, fn) { //acknowlagement function fn
+    fn('woot');
+});*/
+/*socket.emit('ferret', 'tobi', function (data) {
+  console.log(data); // data will be 'woot'
+});*/
+
+//socket.emit('#msg', ""); //Just to socket
