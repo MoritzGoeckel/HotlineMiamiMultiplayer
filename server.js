@@ -1,6 +1,6 @@
 var Express = require('express');
 var Socket = require('socket.io');
-var Player = require('./server_includes/player.js');
+var Player = require('./Player.js');
 
 //Expose frontend
 var express = Express();
