@@ -1,7 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 var gameplayConfig = require("./config/Gameplay.js");
-var SAT = require('sat');
 
 module.exports = class ClientLogic {
 
@@ -19,6 +18,9 @@ module.exports = class ClientLogic {
 
         function changeMe(key, value)
         {
+            if(key == "dir" || key == "pos")
+                map.getObject(me.id)[key] = value;
+
             me[key] = value;
             me.changes.push(key);
         }
@@ -61,7 +63,17 @@ module.exports = class ClientLogic {
             {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
-                changeMe("pos", vMath.add(me.pos, movement));
+
+                var oldPos = me.pos;
+                var newPos = vMath.add(me.pos, movement);
+
+                //Check collision
+                map.getObject(me.id).changePosDir(newPos, undefined);
+
+                if(map.checkCollision(map.getObject(me.id), 500) === false)
+                    changeMe("pos", newPos);
+                else
+                    map.getObject(me.id).changePosDir(oldPos, undefined);
             }
         }
         
@@ -70,7 +82,13 @@ module.exports = class ClientLogic {
         //Todo game logic / prediction
     }
 }
-},{"./VectorMath.js":4,"./config/Gameplay.js":6,"sat":7}],2:[function(require,module,exports){
+},{"./VectorMath.js":7,"./config/Gameplay.js":9}],2:[function(require,module,exports){
+module.exports = {
+    movementSpeed:0.5, 
+    minMouseDistanceMoveForward:35,
+    playerCollisionRadius:30
+};
+},{}],3:[function(require,module,exports){
 module.exports = {
     serverTickrate:30, 
     clientTickrate:100,
@@ -81,58 +99,255 @@ module.exports = {
     httpPort:63884,
     socketPort:64003
 };
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+var vMath = require("./VectorMath.js");
+var MapObject = require("./MapObject.js");
+
+
+module.exports = class Map{
+    constructor(){
+        this.objects = {};
+        this.collidableIds = {};
+    }
+
+    removeObject(id)
+    {
+        delete this.objects[id];
+        
+        if(this.collidableIds[id] != undefined)
+            delete this.collidableIds[id];
+    }
+
+    addObject(obj){ //Todo: Subtree?
+        if(this.objects[obj.id] == undefined)
+            this.objects[obj.id] = obj;
+        else
+            console.error("Error: obj already in map!");
+
+        if(obj.collisionMode != undefined)
+            this.collidableIds[obj.id] = true;
+    }
+
+    getObject(id)
+    {
+        return this.objects[id];
+    }
+
+    getObjectsNear(pos, radius)
+    {
+        var output = [];
+        for(var key in this.objects)
+        {
+            if(vMath.len(vMath.sub(this.objects[key].pos, pos)) < radius)
+                output.push(this.objects[key]);
+        }
+
+        return output;
+    }
+
+    getCollidablesNear(pos, radius)
+    {
+        var output = [];
+        for(var key in this.collidableIds)
+        {
+            if(vMath.len(vMath.sub(this.objects[key].pos, pos)) < radius)
+                output.push(this.objects[key]);
+        }
+
+        return output;
+    }
+
+    checkCollision(obj, radius)
+    {
+        var candidates = this.getCollidablesNear(obj.pos, radius); //Todo: Set Radius
+        var result = [];
+        candidates.forEach(function(candidate){
+            if(candidate.id != obj.id && obj.intersects(candidate))
+                result.push(candidate);
+        });
+
+        if(result.length == 0)
+            return false;
+        else
+            return result;
+    }
+
+    printInfo()
+    {
+        console.log(this.serialize());
+    }
+
+    serialize()
+    {
+        var output = [];
+        for(var key in this.objects)
+            output.push(this.objects[key].serialize());
+
+        return output;
+    }
+
+    deserialize(input)
+    {
+        var base = this;
+        input.forEach(function(value){
+            var obj = new MapObject();
+            obj.deserialize(value);
+
+            base.addObject(obj);
+        });
+    }
+}
+},{"./MapObject.js":5,"./VectorMath.js":7}],5:[function(require,module,exports){
+var SAT = require('sat');
+var vMath = require("./VectorMath.js");
+
+module.exports = class MapObject{
+
+    constructor(pos, dir, id, texture)
+    {
+        this.pos = pos;
+        this.id = id;
+        this.dir = dir;
+        this.texture = texture;
+    }
+
+    changePosDir(newPos, newDir)
+    {
+        if(newPos != undefined)
+            this.pos = newPos;
+
+        if(newDir != undefined)            
+            this.dir = newDir;
+
+        if(this.collisionMode == "poly")
+        {
+            if(newPos != undefined){
+                this.polygon.pos.x = this.pos.x;
+                this.polygon.pos.y = this.pos.y;
+            }
+
+            if(newDir != undefined)
+                this.polygon.setAngle(newDir);
+        }
+    }
+
+    makeCollidableCircle(radius)
+    {
+        this.collisionMode = "circle";
+        this.radius = radius;
+    }
+
+    makeCollidablePoly(polygon)
+    {
+        this.collisionMode = "poly";
+        this.polygon = polygon;
+        this.changePosDir(this.pos, this.dir);
+    }
+
+    makeCollidableBox(width, height)
+    {
+        this.collisionMode = "poly";
+        var box = new SAT.Box(new SAT.Vector(this.pos.x, this.pos.y), width, height);
+        this.collision = box.toPolygon();
+    }
+
+    intersects(mapObject)
+    {
+        if(mapObject.collisionMode == undefined || this.collisionMode == undefined)
+            return false;
+        else
+        {
+            var response = new SAT.Response();
+
+            //Circle
+            if(this.collisionMode == "circle" && mapObject.collisionMode == "circle"){
+
+                //console.log("Pos: " + this.pos.x + "#" + this.pos.y + " obj pos: " + mapObject.pos.x + "#" + mapObject.pos.y);
+                //console.log((vMath.len(vMath.sub(this.pos, mapObject.pos))) + " | " + (this.radius + mapObject.radius));
+                //console.log(vMath.len(vMath.sub(this.pos, mapObject.pos)) < this.radius + mapObject.radius);
+
+                return vMath.len(vMath.sub(this.pos, mapObject.pos)) < this.radius + mapObject.radius;
+            }
+            if(this.collisionMode == "circle" && mapObject.collisionMode == "poly"){
+                return SAT.testCirclePolygon(new SAT.Circle(new SAT.Vector(this.pos.x, this.pos.y), this.radius), mapObject.polygon, response);
+            }
+
+            //poly
+            if(this.collisionMode == "poly" && mapObject.collisionMode == "poly"){
+                return SAT.testPolygonPolygon(this.polygon, mapObject.polygon, response);
+            }
+            if(this.collisionMode == "poly" && mapObject.collisionMode == "circle"){
+                return SAT.testCirclePolygon(new SAT.Circle(new SAT.Vector(mapObject.pos.x,mapObject.pos.y), mapObject.radius), this.polygon, response);
+            }
+
+            console.error("Error: Did not find a coparison method for collsion!");
+        }
+    }
+
+    serialize()
+    {
+        var output = {id: this.id, pos: this.pos, dir: this.dir, texture: this.texture};
+        if(this.collisionMode != undefined)
+            output.collisionMode = this.collisionMode;
+
+        if(this.collisionMode == "poly")
+            output.polygon = this.polygon; 
+
+        if(this.collisionMode == "circle")
+            output.polygon = this.radius;
+
+        return output; 
+    }
+
+    deserialize(input)
+    {
+        for(var key in input)
+            this[key] = input[key];
+    }
+};
+},{"./VectorMath.js":7,"sat":10}],6:[function(require,module,exports){
+var MapObject = require("./MapObject.js");
+
 module.exports = class Render{
-    drawFrame(players, me, map)
+    drawFrame(me, map)
     {
         if(this.resources != undefined)
         {
-            for(var index in players)
-                this.drawPlayer(players[index]);   
+            var base = this;
 
-            this.drawPlayer(me);
+            var objs = map.getObjectsNear(me.pos, 2000);
+            objs.forEach(function(value){ //Todo: Every time?? optimization possible
+                if(value.sprite == undefined){
+                    value.sprite = new PIXI.Sprite(base.resources[value.texture].texture);
+                    value.sprite.anchor.x = 0.5;
+                    value.sprite.anchor.y = 0.5;
+                    base.stage.addChild(value.sprite);
+                }
+
+                value.sprite.rotation = value.dir;
+                value.sprite.position = value.pos;
+            });
 
             this.pixi.render(this.stage);
-
-            //me.dir++;
         }
     }
 
-    drawPlayer(player)
+    removeSprite(sprite)
     {
-        if(this.sprites[player.id] == undefined)
-        {
-            //Has no sprite
-            this.sprites[player.id] = new PIXI.Sprite(this.resources.player.texture);
-            this.sprites[player.id].anchor.x = 0.5;
-            this.sprites[player.id].anchor.y = 0.5;
-            this.stage.addChild(this.sprites[player.id]);
-        }
-        else
-        {
-            //Already has a sprite
-        }
-
-        this.sprites[player.id].position = player.pos;
-        this.sprites[player.id].rotation = player.dir;
+        this.stage.removeChild(sprite)
     }
 
-    removeSprite(id)
-    {
-        this.stage.removeChild(this.sprites[id])
-        delete this.sprites[id];
-    }
-
-    constructor(players, map, pixi)
+    constructor(map, pixi)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
-        this.sprites = {};
 
         var base = this;
 
         var loader = PIXI.loader;
         loader.add('player', 'graphics/player.png');
+        loader.add('player_max', 'graphics/player_max.png');
+
         loader.once('complete', function(e){
             base.resources = e.resources;
             console.log("Resources loaded");
@@ -142,7 +357,7 @@ module.exports = class Render{
         this.pixi.backgroundColor = 0xFFFFFF;
     }
 }
-},{}],4:[function(require,module,exports){
+},{"./MapObject.js":5}],7:[function(require,module,exports){
 module.exports = {
     add : function(vec1, vec2)
     {
@@ -183,28 +398,37 @@ module.exports = {
         return {x:-vec.y, y:vec.x};
     }
 }
-},{}],5:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var ClientLogic = require("./ClientLogic.js");
+var Map = require("./Map.js");
+var MapObject = require("./MapObject.js");
 var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
+var GameplayConfig = require("./Config/Gameplay.js");
+
 
 
 $(document).ready(function(){
 
     //Connect
-    console.log();
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
 
     //The player
     var me;
 
     //The map
-    var map = undefined;
+    var map = new Map();
 
     //Get welcome info for own player
     socket.on('welcome', function (data) {
-        me = data;
+        me = data.player;
         me.changes = [];
+
+        map.deserialize(data.map);
+
+        var mapobj = new MapObject(me.pos, me.dir, me.id, "player");
+        mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+        map.addObject(mapobj);
 
         //Send Update to the Server
         setInterval(function(){ 
@@ -227,22 +451,32 @@ $(document).ready(function(){
     var players = {};
 
     //Recieve full update for a player
-    socket.on('player_full_info', function (data) {
-        players[data.id] = data;
+    socket.on('player_full_info', function (player) {
+        if(players[player.id] == undefined)
+        {
+            //Init other player
+            var mapobj = new MapObject(player.pos, player.dir, player.id, "player");
+            mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+            map.addObject(mapobj);
+        }
+        players[player.id] = player;
     });
 
     //Recieve update for a player
-    socket.on('player_update', function (data) {    
+    socket.on('player_update', function (data) {
+
+        if(data["dir"] != undefined || data["pos"] != undefined)
+            map.getObject(data.id).changePosDir(data["pos"], data["dir"]);
+
         for(var key in data)
-        {
             if(players[data.id] != undefined)
-                players[data.id][key] = data[key];           
-        }
+                players[data.id][key] = data[key];
     });
 
     socket.on('disconnected', function (data) {   
         console.log("disconnected " + data.id);
-        render.removeSprite(data.id);
+        render.removeSprite(map.getObject(data.id).sprite);
+        map.removeObject(data.id);
         delete players[data.id];
     });
 
@@ -257,7 +491,7 @@ $(document).ready(function(){
 
     document.getElementById("content").appendChild(canvas);
 
-    var render = new Render(players, map, pixi);
+    var render = new Render(map, pixi);
 
     //The mouse
     var mouse = {};
@@ -283,17 +517,19 @@ $(document).ready(function(){
 
     //Render loop
     setInterval(function(){
-        render.drawFrame(players, me, map);
+        render.drawFrame(me, map);
     }, 1000 / TechnicalConfig.clientFramerate);
+
+    //Info display
+    /*setInterval(function(){
+        map.printInfo();
+    }, 1000);*/
 });
 
 //Todo: File too long
-},{"./ClientLogic.js":1,"./Config/Technical.js":2,"./Render.js":3}],6:[function(require,module,exports){
-module.exports = {
-    movementSpeed:0.5, 
-    minMouseDistanceMoveForward:35
-};
-},{}],7:[function(require,module,exports){
+},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":4,"./MapObject.js":5,"./Render.js":6}],9:[function(require,module,exports){
+arguments[4][2][0].apply(exports,arguments)
+},{"dup":2}],10:[function(require,module,exports){
 // Version 0.6.0 - Copyright 2012 - 2016 -  Jim Riecken <jimr@jimr.ca>
 //
 // Released under the MIT License - https://github.com/jriecken/sat-js
@@ -1283,4 +1519,4 @@ module.exports = {
   return SAT;
 }));
 
-},{}]},{},[5]);
+},{}]},{},[8]);

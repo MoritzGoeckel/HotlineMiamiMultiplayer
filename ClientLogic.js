@@ -1,6 +1,5 @@
 var vMath = require("./VectorMath.js");
 var gameplayConfig = require("./config/Gameplay.js");
-var SAT = require('sat');
 
 module.exports = class ClientLogic {
 
@@ -18,6 +17,9 @@ module.exports = class ClientLogic {
 
         function changeMe(key, value)
         {
+            if(key == "dir" || key == "pos")
+                map.getObject(me.id)[key] = value;
+
             me[key] = value;
             me.changes.push(key);
         }
@@ -60,7 +62,17 @@ module.exports = class ClientLogic {
             {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
-                changeMe("pos", vMath.add(me.pos, movement));
+
+                var oldPos = me.pos;
+                var newPos = vMath.add(me.pos, movement);
+
+                //Check collision
+                map.getObject(me.id).changePosDir(newPos, undefined);
+
+                if(map.checkCollision(map.getObject(me.id), 500) === false)
+                    changeMe("pos", newPos);
+                else
+                    map.getObject(me.id).changePosDir(oldPos, undefined);
             }
         }
         

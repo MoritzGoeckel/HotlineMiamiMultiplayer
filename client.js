@@ -1,24 +1,33 @@
 var ClientLogic = require("./ClientLogic.js");
+var Map = require("./Map.js");
+var MapObject = require("./MapObject.js");
 var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
+var GameplayConfig = require("./Config/Gameplay.js");
+
 
 
 $(document).ready(function(){
 
     //Connect
-    console.log();
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
 
     //The player
     var me;
 
     //The map
-    var map = undefined;
+    var map = new Map();
 
     //Get welcome info for own player
     socket.on('welcome', function (data) {
-        me = data;
+        me = data.player;
         me.changes = [];
+
+        map.deserialize(data.map);
+
+        var mapobj = new MapObject(me.pos, me.dir, me.id, "player");
+        mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+        map.addObject(mapobj);
 
         //Send Update to the Server
         setInterval(function(){ 
@@ -41,22 +50,32 @@ $(document).ready(function(){
     var players = {};
 
     //Recieve full update for a player
-    socket.on('player_full_info', function (data) {
-        players[data.id] = data;
+    socket.on('player_full_info', function (player) {
+        if(players[player.id] == undefined)
+        {
+            //Init other player
+            var mapobj = new MapObject(player.pos, player.dir, player.id, "player");
+            mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+            map.addObject(mapobj);
+        }
+        players[player.id] = player;
     });
 
     //Recieve update for a player
-    socket.on('player_update', function (data) {    
+    socket.on('player_update', function (data) {
+
+        if(data["dir"] != undefined || data["pos"] != undefined)
+            map.getObject(data.id).changePosDir(data["pos"], data["dir"]);
+
         for(var key in data)
-        {
             if(players[data.id] != undefined)
-                players[data.id][key] = data[key];           
-        }
+                players[data.id][key] = data[key];
     });
 
     socket.on('disconnected', function (data) {   
         console.log("disconnected " + data.id);
-        render.removeSprite(data.id);
+        render.removeSprite(map.getObject(data.id).sprite);
+        map.removeObject(data.id);
         delete players[data.id];
     });
 
@@ -71,7 +90,7 @@ $(document).ready(function(){
 
     document.getElementById("content").appendChild(canvas);
 
-    var render = new Render(players, map, pixi);
+    var render = new Render(map, pixi);
 
     //The mouse
     var mouse = {};
@@ -97,8 +116,13 @@ $(document).ready(function(){
 
     //Render loop
     setInterval(function(){
-        render.drawFrame(players, me, map);
+        render.drawFrame(me, map);
     }, 1000 / TechnicalConfig.clientFramerate);
+
+    //Info display
+    /*setInterval(function(){
+        map.printInfo();
+    }, 1000);*/
 });
 
 //Todo: File too long
