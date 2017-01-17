@@ -2,16 +2,20 @@ var Express = require('express');
 var Socket = require('socket.io');
 var Player = require('./Player.js');
 
+var vMath = require('./VectorMath.js');
+var TechnicalConfig = require('./config/Technical.js');
+var GameplayConfig = require('./config/Gameplay');
+
 //Expose frontend
 var express = Express();
 express.use(Express.static('frontend'));
-express.listen(63884, function () {
-  console.log('http on port 63884');
+express.listen(TechnicalConfig.httpPort, function () {
+  console.log('http on port ' + TechnicalConfig.httpPort);
 });
 
 //Create socket server
-var server = Socket(64003);
-console.log('tcp on port 64003');
+var server = Socket(TechnicalConfig.socketPort);
+console.log('sockets on port ' + TechnicalConfig.socketPort);
 
 //All players
 var players = [];
@@ -41,10 +45,11 @@ server.on('connection', function(socket){
         {
           if(player[key] != msg[key])
           {
-            if(validateInput(key, player[key], msg[key])) //Validate the input
+            if(validateInput(key, player[key], msg[key], new Date().getTime() - player["lastUpdate_" + key])) //Validate the input
             {
               player[key] = msg[key];
-              player.changes.push(key);              
+              player["lastUpdate_" + key] = new Date().getTime();
+              player.changes.push(key);            
             }
             else
             {
@@ -77,7 +82,7 @@ setInterval(function() {
     }
   });
 
-}, 1000 / 40);
+}, 1000 / TechnicalConfig.serverToClientComRate);
 
 //Send FULL INFO to other players
 setInterval(function() {
@@ -86,22 +91,33 @@ setInterval(function() {
         player.socket.broadcast.emit("player_full_info", player.serialize()); //To everyone except the player
   });
 
-}, 1000 / 1);
+}, 1000 / TechnicalConfig.serverToClientFullUpdateRate);
 
 setInterval(function(){
   //Todo: Logic
-}, 1000 / 30);
+}, 1000 / TechnicalConfig.serverTickrate);
 
-function validateInput(key, old_value, new_value)
+function validateInput(key, old_value, new_value, delta)
 {
-  if(key != "id")
-    return true;
-    //Todo: More restrictions (movement etc)
+  if(key == "id")
+    return false;
+  if(key == "pos")
+  {
+    //Collision detection
+
+    //Speed detection
+    if(vMath.len(vMath.sub(new_value, old_value)) > GameplayConfig.movementSpeed * delta * 1.5)
+      return false;
+  }
+
+  //Todo: More Restrictions
+
+  //No one complais -> good
+  return true;
 }
 
 //Display info
 setInterval(function() {
-  //players.forEach(function(value, index, array){console.log(value.serialize())});
-  //console.log("######################################################");
+  //Display
 }, 1000);
 

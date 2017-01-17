@@ -1,5 +1,7 @@
 var ClientLogic = require("./ClientLogic.js");
 var Render = require("./Render.js");
+var TechnicalConfig = require("./Config/Technical.js");
+
 
 $(document).ready(function(){
 
@@ -33,7 +35,7 @@ $(document).ready(function(){
 
                 socket.emit("update", msg);
             }
-        }, 1000 / 40);
+        }, 1000 / TechnicalConfig.clientToServerComRate);
     });
 
     var players = {};
@@ -91,12 +93,12 @@ $(document).ready(function(){
     //Logic loop
     setInterval(function(){
         logic.updateMovement(me, map, keys, mouse);
-    }, 1000 / 100);
+    }, 1000 / TechnicalConfig.clientTickrate);
 
     //Render loop
     setInterval(function(){
         render.drawFrame(players, me, map);
-    }, 1000 / 100);
+    }, 1000 / TechnicalConfig.clientFramerate);
 });
 
 //Todo: File too long
