@@ -64,7 +64,7 @@ $(document).ready(function(){
     window.onkeydown = function(e) {keys[e.keyCode]=true;}
 
     //The canvas
-    var pixi = new PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
+    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
     var canvas = pixi.view;
 
     document.getElementById("content").appendChild(canvas);
