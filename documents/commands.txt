@@ -1,0 +1,2 @@
+
+watchify client.js -o frontend/bundle.js -v

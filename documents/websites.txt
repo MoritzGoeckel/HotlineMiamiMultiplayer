@@ -1,0 +1,12 @@
+https://github.com/substack/node-browserify#usage
+https://github.com/substack/browserify-handbook
+
+https://www.npmjs.com/package/watchify
+
+https://github.com/jriecken/sat-js
+
+http://pixijs.download/release/docs/PIXI.utils.html
+https://github.com/kittykatattack/learningPixi
+https://github.com/pixijs/pixi.js
+
+http://moritzg.serpens.uberspace.de:63884/
