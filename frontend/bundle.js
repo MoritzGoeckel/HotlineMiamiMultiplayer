@@ -70,10 +70,34 @@ module.exports = class ClientLogic {
                 //Check collision
                 map.getObject(me.id).changePosDir(newPos, undefined);
 
-                if(map.checkCollision(map.getObject(me.id), 500) === false)
+                var collidingObjs = map.checkCollision(map.getObject(me.id), 500);
+
+                if(collidingObjs === false)
                     changeMe("pos", newPos);
                 else
-                    map.getObject(me.id).changePosDir(oldPos, undefined);
+                {
+                    //Todo: general slowdown mechanic
+                    var isOnlyPlayer = true;
+                    for(var i in collidingObjs){
+                        if(collidingObjs[i].isPlayer == undefined)
+                        {
+                            isOnlyPlayer = false;
+                            break;
+                        }
+                    }
+                    
+                    if(isOnlyPlayer == false)
+                    {
+                        map.getObject(me.id).changePosDir(oldPos, undefined);
+                        //changeMe("pos", oldPos);
+                    }
+                    else
+                    {
+                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, 0.2));
+                        map.getObject(me.id).changePosDir(alternativeNewPos, undefined);
+                        changeMe("pos", alternativeNewPos);
+                    }
+                }
             }
         }
         
@@ -457,6 +481,7 @@ $(document).ready(function(){
             //Init other player
             var mapobj = new MapObject(player.pos, player.dir, player.id, "player");
             mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+            mapobj.isPlayer = true;
             map.addObject(mapobj);
         }
         players[player.id] = player;

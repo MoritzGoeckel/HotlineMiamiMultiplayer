@@ -56,6 +56,7 @@ $(document).ready(function(){
             //Init other player
             var mapobj = new MapObject(player.pos, player.dir, player.id, "player");
             mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
+            mapobj.isPlayer = true;
             map.addObject(mapobj);
         }
         players[player.id] = player;

@@ -21,7 +21,7 @@ var getNewId = createNewIDFunction();
 
 //Generate map
 var map = new Map();
-map.addObject(new MapObject({x:200, y:200}, 0.5 * Math.PI, getNewId(), "player_max"));
+map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max"));
 map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max"));
 
 //Expose frontend
