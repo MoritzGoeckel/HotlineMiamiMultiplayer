@@ -95,6 +95,8 @@ setInterval(function() {
 
         //Todo: Bundle the messages
         player.socket.broadcast.emit("player_update", playerUpdateMsg); //To everyone except the player
+
+        //projectiles_update
     }
   });
 

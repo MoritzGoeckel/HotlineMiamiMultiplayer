@@ -5,12 +5,20 @@ module.exports = class ClientLogic {
 
     constructor(){
         this.lastUpdateMovement = new Date().getTime();
+        this.lastFireTime = this.lastUpdateMovement;
+        this.fireRate = 1000 / 3;
     }
 
-    updateMovement(me, map, keys, mouse)
+    updateProjectiles(me, map, projectiles)
+    {
+
+    }
+
+    updateMovement(me, map, keys, mouse, triggerFire)
     {        
-        var delta = new Date() - this.lastUpdateMovement;
-        this.lastUpdateMovement = new Date().getTime();
+        let now = new Date().getTime();
+        var delta = now - this.lastUpdateMovement;
+        this.lastUpdateMovement = now;
 
         if(me == undefined)
             return;
@@ -36,6 +44,12 @@ module.exports = class ClientLogic {
             
             courserToPlayer = vMath.norm(courserToPlayer);
             var movement = {x:0, y:0};
+
+            if(mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            {
+                this.lastFireTime = now;
+                triggerFire();
+            }
 
             //W
             if(keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)

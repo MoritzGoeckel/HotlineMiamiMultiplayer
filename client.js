@@ -13,6 +13,7 @@ $(document).ready(function(){
 
     //The map
     var map = new Map();
+    let projectiles = [];
 
     //Get welcome info for own player
     socket.on('welcome', function (data) {
@@ -60,6 +61,11 @@ $(document).ready(function(){
         players[player.id] = player;
     });
 
+    //TODO: DO serverside
+    socket.on("projectiles_update", function(projectiles_update){
+        projectiles = projectiles_update;
+    });
+
     //Recieve update for a player
     socket.on('player_update', function (data) {
 
@@ -93,6 +99,13 @@ $(document).ready(function(){
 
     //The mouse
     var mouse = {};
+    mouse.buttonsArray = [false, false, false, false, false, false, false, false, false];
+    document.onmousedown = function(e) {
+        mouse.buttonsArray[e.button] = true;
+    };
+    document.onmouseup = function(e) {
+        mouse.buttonsArray[e.button] = false;
+    };
 
     canvas.addEventListener('mousemove', function(evt) {
         mouse.pos = getMousePos(canvas, evt);
@@ -110,7 +123,11 @@ $(document).ready(function(){
 
     //Logic loop
     setInterval(function(){
-        logic.updateMovement(me, map, keys, mouse);
+        logic.updateMovement(me, map, keys, mouse, function(){
+            //Todo: send to server and to map
+        });
+        
+        logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);
 
     //Render loop
