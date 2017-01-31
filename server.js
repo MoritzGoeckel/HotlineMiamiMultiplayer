@@ -131,9 +131,3 @@ function validateInput(key, old_value, new_value, delta)
   //No one complais -> good
   return true;
 }
-
-//Display info
-setInterval(function() {
-  //Display
-}, 1000);
-

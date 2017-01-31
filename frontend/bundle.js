@@ -454,8 +454,6 @@ var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 
-
-
 $(document).ready(function(){
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
 
@@ -569,10 +567,6 @@ $(document).ready(function(){
         render.drawFrame(me, map);
     }, 1000 / TechnicalConfig.clientFramerate);
 
-    //Info display
-    /*setInterval(function(){
-        map.printInfo();
-    }, 1000);*/
 });
 
 //Todo: File too long
