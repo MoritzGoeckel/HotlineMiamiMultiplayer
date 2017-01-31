@@ -72,29 +72,41 @@ module.exports = class ClientLogic {
                 var collidingObjs = map.checkCollision(map.getObject(me.id), 500);
 
                 if(collidingObjs === false)
+                {
                     changeMe("pos", newPos);
+                }
                 else
                 {
-                    //Todo: general slowdown mechanic
-                    var isOnlyPlayer = true;
-                    for(var i in collidingObjs){
-                        if(collidingObjs[i].isPlayer == undefined)
+                    let colliding = false;
+                    let speedChange = undefined;
+
+                    for(let i in collidingObjs){
+                        if(collidingObjs[i].speedChange == undefined)
                         {
-                            isOnlyPlayer = false;
+                            colliding = true;
                             break;
                         }
+                        else
+                            speedChange = collidingObjs[i].speedChange;
                     }
                     
-                    if(isOnlyPlayer == false)
+                    if(colliding == false && speedChange == undefined)
                     {
-                        map.getObject(me.id).changePosDir(oldPos, undefined);
-                        //changeMe("pos", oldPos);
+                        //Okay, continue
+                        changeMe("pos", newPos);
                     }
-                    else
+                    else if(colliding == false && speedChange != undefined)
                     {
-                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, 0.2));
+                        //Slow down
+                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, speedChange));
                         map.getObject(me.id).changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
+                    }
+                    else if(colliding)
+                    {
+                        //It is coliding, get back to old position
+                        map.getObject(me.id).changePosDir(oldPos, undefined);
+                        changeMe("pos", oldPos);    
                     }
                 }
             }

@@ -21,12 +21,12 @@ var getNewId = createNewIDFunction();
 
 //Generate map
 var map = new Map();
-map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max"));
-map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max"));
+map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max").makeCollidableCircle(30));
+map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max").makeCollidableCircle(30).makeSpeedChange(0.2));
 
 //Expose frontend
 var express = Express();
-express.use(Express.static('frontend'));
+express.use(Express.static(__dirname + '/frontend'));
 express.listen(TechnicalConfig.httpPort, function () {
   console.log('http on port ' + TechnicalConfig.httpPort);
 });

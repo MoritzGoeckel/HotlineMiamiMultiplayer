@@ -31,10 +31,17 @@ module.exports = class MapObject{
         }
     }
 
+    makeSpeedChange(factor)
+    {
+        this.speedChange = factor;
+        return this;
+    }
+
     makeCollidableCircle(radius)
     {
         this.collisionMode = "circle";
         this.radius = radius;
+        return this;
     }
 
     makeCollidablePoly(polygon)
@@ -42,6 +49,7 @@ module.exports = class MapObject{
         this.collisionMode = "poly";
         this.polygon = polygon;
         this.changePosDir(this.pos, this.dir);
+        return this;
     }
 
     makeCollidableBox(width, height)
@@ -49,6 +57,7 @@ module.exports = class MapObject{
         this.collisionMode = "poly";
         var box = new SAT.Box(new SAT.Vector(this.pos.x, this.pos.y), width, height);
         this.collision = box.toPolygon();
+        return this;
     }
 
     intersects(mapObject)
@@ -94,7 +103,10 @@ module.exports = class MapObject{
             output.polygon = this.polygon; 
 
         if(this.collisionMode == "circle")
-            output.polygon = this.radius;
+            output.radius = this.radius;
+
+        if(this.speedChange != undefined)
+            output.speedChange = this.speedChange;
 
         return output; 
     }

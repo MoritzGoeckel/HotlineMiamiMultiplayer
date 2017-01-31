@@ -8,8 +8,6 @@ var GameplayConfig = require("./Config/Gameplay.js");
 
 
 $(document).ready(function(){
-
-    //Connect
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
 
     //The player
@@ -28,6 +26,8 @@ $(document).ready(function(){
         var mapobj = new MapObject(me.pos, me.dir, me.id, "player");
         mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
         map.addObject(mapobj);
+
+        console.log(map);
 
         //Send Update to the Server
         setInterval(function(){ 

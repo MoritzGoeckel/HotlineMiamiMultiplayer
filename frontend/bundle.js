@@ -73,29 +73,41 @@ module.exports = class ClientLogic {
                 var collidingObjs = map.checkCollision(map.getObject(me.id), 500);
 
                 if(collidingObjs === false)
+                {
                     changeMe("pos", newPos);
+                }
                 else
                 {
-                    //Todo: general slowdown mechanic
-                    var isOnlyPlayer = true;
-                    for(var i in collidingObjs){
-                        if(collidingObjs[i].isPlayer == undefined)
+                    let colliding = false;
+                    let speedChange = undefined;
+
+                    for(let i in collidingObjs){
+                        if(collidingObjs[i].speedChange == undefined)
                         {
-                            isOnlyPlayer = false;
+                            colliding = true;
                             break;
                         }
+                        else
+                            speedChange = collidingObjs[i].speedChange;
                     }
                     
-                    if(isOnlyPlayer == false)
+                    if(colliding == false && speedChange == undefined)
                     {
-                        map.getObject(me.id).changePosDir(oldPos, undefined);
-                        //changeMe("pos", oldPos);
+                        //Okay, continue
+                        changeMe("pos", newPos);
                     }
-                    else
+                    else if(colliding == false && speedChange != undefined)
                     {
-                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, 0.2));
+                        //Slow down
+                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, speedChange));
                         map.getObject(me.id).changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
+                    }
+                    else if(colliding)
+                    {
+                        //It is coliding, get back to old position
+                        map.getObject(me.id).changePosDir(oldPos, undefined);
+                        changeMe("pos", oldPos);    
                     }
                 }
             }
@@ -255,10 +267,17 @@ module.exports = class MapObject{
         }
     }
 
+    makeSpeedChange(factor)
+    {
+        this.speedChange = factor;
+        return this;
+    }
+
     makeCollidableCircle(radius)
     {
         this.collisionMode = "circle";
         this.radius = radius;
+        return this;
     }
 
     makeCollidablePoly(polygon)
@@ -266,6 +285,7 @@ module.exports = class MapObject{
         this.collisionMode = "poly";
         this.polygon = polygon;
         this.changePosDir(this.pos, this.dir);
+        return this;
     }
 
     makeCollidableBox(width, height)
@@ -273,6 +293,7 @@ module.exports = class MapObject{
         this.collisionMode = "poly";
         var box = new SAT.Box(new SAT.Vector(this.pos.x, this.pos.y), width, height);
         this.collision = box.toPolygon();
+        return this;
     }
 
     intersects(mapObject)
@@ -318,7 +339,10 @@ module.exports = class MapObject{
             output.polygon = this.polygon; 
 
         if(this.collisionMode == "circle")
-            output.polygon = this.radius;
+            output.radius = this.radius;
+
+        if(this.speedChange != undefined)
+            output.speedChange = this.speedChange;
 
         return output; 
     }
@@ -433,8 +457,6 @@ var GameplayConfig = require("./Config/Gameplay.js");
 
 
 $(document).ready(function(){
-
-    //Connect
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
 
     //The player
@@ -453,6 +475,8 @@ $(document).ready(function(){
         var mapobj = new MapObject(me.pos, me.dir, me.id, "player");
         mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
         map.addObject(mapobj);
+
+        console.log(map);
 
         //Send Update to the Server
         setInterval(function(){ 
