@@ -124,7 +124,7 @@ $(document).ready(function(){
     //Logic loop
     setInterval(function(){
         logic.updateMovement(me, map, keys, mouse, function(){
-            //Todo: send to server and to map
+            socket.emit("trigger_fire", {pos:me.pos, dir:me.dir});
         });
         
         logic.updateProjectiles(me, map, projectiles);
