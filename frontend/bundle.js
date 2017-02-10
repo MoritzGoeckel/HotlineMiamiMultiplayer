@@ -153,7 +153,6 @@ module.exports = {
 var vMath = require("./VectorMath.js");
 var MapObject = require("./MapObject.js");
 
-
 module.exports = class Map{
     constructor(){
         this.objects = {};
@@ -587,7 +586,7 @@ $(document).ready(function(){
     //Logic loop
     setInterval(function(){
         logic.updateMovement(me, map, keys, mouse, function(){
-            //Todo: send to server and to map
+            socket.emit("trigger_fire", {pos:me.pos, dir:me.dir});
         });
         
         logic.updateProjectiles(me, map, projectiles);

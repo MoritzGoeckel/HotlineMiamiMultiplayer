@@ -1,7 +1,6 @@
 var vMath = require("./VectorMath.js");
 var MapObject = require("./MapObject.js");
 
-
 module.exports = class Map{
     constructor(){
         this.objects = {};
