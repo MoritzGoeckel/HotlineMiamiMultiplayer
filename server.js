@@ -43,13 +43,22 @@ var projectiles = [];
 
 server.on('connection', function(socket){    
     //Player connects
-    var player = new Player(getNewId(), {x:Math.random() * 200, y:Math.random() * 200}, 0, socket);
+    var player = new Player(getNewId(), socket);
     players.push(player);
 
-    console.log(player.id + " connected");
+    player.sendToOthers();
+    player.addOwnedObject("playerMapObject", getNewId());
+    
+    map.addObject(
+      new MapObject(
+        {x:300 * Math.random(), y:300 * Math.random()}, 
+        Math.random() * Math.PI, 
+        player.getOwnedObject("playerMapObject"), 
+        "player")
+      .makeCollidableCircle(30)
+      .makeSpeedChange(0.2));
 
-    socket.emit("welcome", {player:player.serialize(), map:map.serialize()});
-    socket.broadcast.emit('player_full_info', player.serialize());
+    player.sendObject("map", map.serialize());
 
     //Player disconnects
     socket.on('disconnect', function(){
@@ -60,7 +69,7 @@ server.on('connection', function(socket){
 
     //Recieve update from player
     socket.on('update', function(msg){
-        for(var key in msg)
+        for(var objectId in msg)
         {
           if(player[key] != msg[key])
           {
@@ -84,7 +93,7 @@ server.on('connection', function(socket){
 
 });
 //Send UPDATE to other players
-setInterval(function() {
+/*setInterval(function() {
 
   players.forEach(function(player){
     if(player.changes.length > 0)
@@ -107,10 +116,10 @@ setInterval(function() {
     }
   });
 
-}, 1000 / TechnicalConfig.serverToClientComRate);
+}, 1000 / TechnicalConfig.serverToClientComRate);*/
 
 //Send FULL INFO to other players
-setInterval(function() {
+/*setInterval(function() {
 
   players.forEach(function(player){
         player.socket.broadcast.emit("player_full_info", player.serialize()); //To everyone except the player
@@ -120,4 +129,4 @@ setInterval(function() {
 
 setInterval(function(){
   //Todo: Logic
-}, 1000 / TechnicalConfig.serverTickrate);
+}, 1000 / TechnicalConfig.serverTickrate);*/

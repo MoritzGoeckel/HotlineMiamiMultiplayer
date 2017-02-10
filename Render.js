@@ -7,7 +7,9 @@ module.exports = class Render{
         {
             var base = this;
 
-            var objs = map.getObjectsNear(me.pos, 2000);
+            let playerObject = map.getObject(me.owned['playerMapObject']);
+            
+            var objs = map.getObjectsNear(playerObject.pos, 2000);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(value.sprite == undefined){
                     value.sprite = new PIXI.Sprite(base.resources[value.texture].texture);

@@ -228,22 +228,28 @@ module.exports = class Map{
 
     serialize()
     {
-        var output = [];
+        let output = {deserializeFunction:"map", data:[]};
         for(var key in this.objects)
-            output.push(this.objects[key].serialize());
+            output.data.push(this.objects[key].serialize());
 
         return output;
     }
 
-    deserialize(input)
-    {
-        var base = this;
-        input.forEach(function(value){
-            var obj = new MapObject();
-            obj.deserialize(value);
+    updateDeserializer(deserializer){
+        deserializer["map"] = function(input)
+        {
+            let output = new Map();
+            input.forEach(function(value){
+                var obj = new MapObject();
+                obj.deserialize(value);
 
-            base.addObject(obj);
-        });
+                output.addObject(obj);
+            });
+
+            return output;
+        };
+
+        return deserializer;
     }
 }
 },{"./MapObject.js":5,"./VectorMath.js":7}],5:[function(require,module,exports){
@@ -376,7 +382,9 @@ module.exports = class Render{
         {
             var base = this;
 
-            var objs = map.getObjectsNear(me.pos, 2000);
+            let playerObject = map.getObject(me.owned['playerMapObject']);
+            
+            var objs = map.getObjectsNear(playerObject.pos, 2000);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(value.sprite == undefined){
                     value.sprite = new PIXI.Sprite(base.resources[value.texture].texture);
@@ -469,29 +477,25 @@ var GameplayConfig = require("./Config/Gameplay.js");
 
 $(document).ready(function(){
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
-
-    //The player
     var me;
+    
+    let deserializers = {};
+    deserializers = new Map().updateDeserializer(deserializers);
 
-    //The map
-    var map = new Map();
-    let projectiles = [];
+    let data = {};
+    data.map = new Map();
 
-    //Get welcome info for own player
-    socket.on('welcome', function (data) {
-        me = data.player;
-        me.changes = [];
+    socket.on('set', function (input) {
 
-        map.deserialize(data.map);
+        console.log(input);
 
-        var mapobj = new MapObject(me.pos, me.dir, me.id, "player");
-        mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
-        map.addObject(mapobj);
+        let id = input.id;
+        let obj = input.obj;
 
-        console.log(map);
+        data[id] = deserializers[obj.deserializeFunction](obj.data);
 
         //Send Update to the Server
-        setInterval(function(){ 
+        /*setInterval(function(){ 
 
             if(me.changes.length > 0)
             {
@@ -505,38 +509,27 @@ $(document).ready(function(){
 
                 socket.emit("update", msg);
             }
-        }, 1000 / TechnicalConfig.clientToServerComRate);
+        }, 1000 / TechnicalConfig.clientToServerComRate);*/
     });
 
-    var players = {};
+    socket.on('update', function (data) {
 
-    //Recieve full update for a player
-    socket.on('player_full_info', function (player) {
-        if(players[player.id] == undefined)
-        {
-            //Init other player
-            var mapobj = new MapObject(player.pos, player.dir, player.id, "player");
-            mapobj.makeCollidableCircle(GameplayConfig.playerCollisionRadius);
-            mapobj.isPlayer = true;
-            map.addObject(mapobj);
-        }
-        players[player.id] = player;
-    });
-
-    //TODO: DO serverside
-    socket.on("projectiles_update", function(projectiles_update){
-        projectiles = projectiles_update;
-    });
-
-    //Recieve update for a player
-    socket.on('player_update', function (data) {
-
-        if(data["dir"] != undefined || data["pos"] != undefined)
+        /*if(data["dir"] != undefined || data["pos"] != undefined)
             map.getObject(data.id).changePosDir(data["pos"], data["dir"]);
 
         for(var key in data)
             if(players[data.id] != undefined)
-                players[data.id][key] = data[key];
+                players[data.id][key] = data[key];*/
+    });
+
+    var players = {};
+    socket.on('you_player_info', function (player) {
+        me = player;
+        console.log(me);
+    });
+
+    socket.on('player_info', function (player) {
+        players[player.id] = player;
     });
 
     socket.on('disconnected', function (data) {   
@@ -554,10 +547,7 @@ $(document).ready(function(){
     //The canvas
     var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
     var canvas = pixi.view;
-
     document.getElementById("content").appendChild(canvas);
-
-    var render = new Render(map, pixi);
 
     //The mouse
     var mouse = {};
@@ -584,17 +574,21 @@ $(document).ready(function(){
     var logic = new ClientLogic();
 
     //Logic loop
-    setInterval(function(){
+    /*setInterval(function(){
         logic.updateMovement(me, map, keys, mouse, function(){
             socket.emit("trigger_fire", {pos:me.pos, dir:me.dir});
         });
         
         logic.updateProjectiles(me, map, projectiles);
-    }, 1000 / TechnicalConfig.clientTickrate);
+    }, 1000 / TechnicalConfig.clientTickrate);*/
 
     //Render loop
+    let render = undefined;
     setInterval(function(){
-        render.drawFrame(me, map);
+        if(data.map != undefined && render == undefined)
+            render = new Render(data.map, pixi);        
+
+        render.drawFrame(me, data.map);
     }, 1000 / TechnicalConfig.clientFramerate);
 
 });

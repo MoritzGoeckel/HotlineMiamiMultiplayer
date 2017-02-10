@@ -1,15 +1,44 @@
 module.exports = class Player{
-    constructor(id, pos, dir, socket)
+    constructor(id, socket)
     {
         this.id = id;
-        this.pos = pos;
-        this.dir = dir;
         this.socket = socket;
-        this.changes = [];
+        this.ownedObjects = {};
     }
 
-    serialize()
+    addOwnedObject(name, id)
     {
-        return {id:this.id, pos:this.pos, dir:this.dir};
+        this.ownedObjects[name] = id;
+        this.sendToClient();
+    }
+
+    getOwnedObject(name){
+        return this.ownedObjects[name];
+    }
+
+    removeOwnedObject(name)
+    {
+        delete this.ownedObjects[name];
+        this.sendToClient();
+    }
+
+    sendToClient()
+    {
+        this.socket.emit("you_player_info", {id:this.id, owned:this.ownedObjects});
+    }
+
+    sendToOthers()
+    {
+        this.socket.broadcast.emit("player_info", {id:this.id});
+    }
+
+    sendObject(id, obj)
+    {
+        this.socket.emit("set", {id:id, obj:obj});
+    }
+
+    sendUpdate(obj)
+    {
+        this.socket.emit("update", obj);
     }
 }

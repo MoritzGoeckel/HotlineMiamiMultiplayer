@@ -76,21 +76,27 @@ module.exports = class Map{
 
     serialize()
     {
-        var output = [];
+        let output = {deserializeFunction:"map", data:[]};
         for(var key in this.objects)
-            output.push(this.objects[key].serialize());
+            output.data.push(this.objects[key].serialize());
 
         return output;
     }
 
-    deserialize(input)
-    {
-        var base = this;
-        input.forEach(function(value){
-            var obj = new MapObject();
-            obj.deserialize(value);
+    updateDeserializer(deserializer){
+        deserializer["map"] = function(input)
+        {
+            let output = new Map();
+            input.forEach(function(value){
+                var obj = new MapObject();
+                obj.deserialize(value);
 
-            base.addObject(obj);
-        });
+                output.addObject(obj);
+            });
+
+            return output;
+        };
+
+        return deserializer;
     }
 }
