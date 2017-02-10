@@ -37,6 +37,7 @@ console.log('sockets on port ' + TechnicalConfig.socketPort);
 
 //All players
 var players = [];
+var projectiles = [];
 
 server.on('connection', function(socket){    
     //Player connects
@@ -74,8 +75,12 @@ server.on('connection', function(socket){
           }
         }
     });
-});
 
+    socket.on("trigger_fire", function(msg){
+      projectiles.push(new Projectile(msg.pos, msg.dir, ))
+    });
+
+});
 //Send UPDATE to other players
 setInterval(function() {
 
