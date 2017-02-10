@@ -16,30 +16,10 @@ $(document).ready(function(){
     data.map = new Map();
 
     socket.on('set', function (input) {
-
-        console.log(input);
-
         let id = input.id;
         let obj = input.obj;
 
         data[id] = deserializers[obj.deserializeFunction](obj.data);
-
-        //Send Update to the Server
-        /*setInterval(function(){ 
-
-            if(me.changes.length > 0)
-            {
-                var msg = {};
-                for(var index in me.changes)
-                {
-                    var key = me.changes[index];
-                    msg[key] = me[key];
-                }
-                me.changes = [];
-
-                socket.emit("update", msg);
-            }
-        }, 1000 / TechnicalConfig.clientToServerComRate);*/
     });
 
     socket.on('update', function (data) {
@@ -74,11 +54,17 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi);        
+    let render = new Render(pixi, ["player", "player_max"]);        
 
     var logic = new ClientLogic();
     logic.initMouseInput(canvas);
     logic.initKeyboardInput();
+
+    //Render loop
+    setInterval(function(){
+        if(render != undefined && data.map != undefined && me != undefined)
+            render.drawFrame(me, data.map);
+    }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
     /*setInterval(function(){
@@ -89,12 +75,20 @@ $(document).ready(function(){
         logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);*/
 
-    //Render loop
-    setInterval(function(){
-        if(render != undefined && data.map != undefined && me != undefined)
-            render.drawFrame(me, data.map);
-    }, 1000 / TechnicalConfig.clientFramerate);
+    //Send Update to the Server
+    /*setInterval(function(){ 
 
+        if(me.changes.length > 0)
+        {
+            var msg = {};
+            for(var index in me.changes)
+            {
+                var key = me.changes[index];
+                msg[key] = me[key];
+            }
+            me.changes = [];
+
+            socket.emit("update", msg);
+        }
+    }, 1000 / TechnicalConfig.clientToServerComRate);*/
 });
-
-//Todo: File too long

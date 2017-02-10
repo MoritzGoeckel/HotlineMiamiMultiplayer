@@ -62,6 +62,7 @@ server.on('connection', function(socket){
 
     //Player disconnects
     socket.on('disconnect', function(){
+      map.removeObject(player.getOwnedObject("playerMapObject"));
       players = players.filter(function(value){ return value != player; });
       console.log(player.id + " disconnected");
       server.emit("disconnected", {id:player.id});

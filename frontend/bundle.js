@@ -412,32 +412,47 @@ module.exports = class Render{
         if(this.resources != undefined)
         {
             var base = this;
-
             let playerObject = map.getObject(me.owned['playerMapObject']);
             
             var objs = map.getObjectsNear(playerObject.pos, 2000);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
-                if(value.sprite == undefined){
-                    value.sprite = new PIXI.Sprite(base.resources[value.texture].texture);
-                    value.sprite.anchor.x = 0.5;
-                    value.sprite.anchor.y = 0.5;
-                    base.stage.addChild(value.sprite);
+                if(base.sprites[value.id] == undefined){
+                    base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
+                    base.sprites[value.id].anchor.x = 0.5;
+                    base.sprites[value.id].anchor.y = 0.5;
+                    base.stage.addChild(base.sprites[value.id]);
                 }
 
-                value.sprite.rotation = value.dir;
-                value.sprite.position = value.pos;
+                base.sprites[value.id].rotation = value.dir;
+                base.sprites[value.id].position = value.pos;
             });
+
+            //Check if you have to remove objects
+            if(objs.length < Object.keys(this.sprites))
+            {
+                let stillExistingSprites = {};
+                for(let i in objs)
+                    stillExistingSprites[objs[i].id] = this.sprites[objs[i].id];
+                
+                for(let i in this.sprites){
+                    if(stillExistingSprites[i] == undefined){
+                        this.removeSprite(this.sprites[i]);
+                    }
+                }
+            }
 
             this.pixi.render(this.stage);
         }
     }
 
-    removeSprite(sprite)
+    removeSprite(objectId)
     {
+        let sprite = this.sprites[objectId];
+        delete this.sprites[objectId];
         this.stage.removeChild(sprite)
     }
 
-    constructor(pixi)
+    constructor(pixi, textures)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
@@ -445,8 +460,8 @@ module.exports = class Render{
         var base = this;
 
         var loader = PIXI.loader;
-        loader.add('player', 'graphics/player.png');
-        loader.add('player_max', 'graphics/player_max.png');
+        for(let i in textures)
+            loader.add(textures[i], 'graphics/' + textures[i] + '.png');
 
         loader.once('complete', function(e){
             base.resources = e.resources;
@@ -455,6 +470,7 @@ module.exports = class Render{
         loader.load();
 
         this.pixi.backgroundColor = 0xFFFFFF;
+        this.sprites = {};
     }
 }
 },{"./MapObject.js":5}],7:[function(require,module,exports){
@@ -517,30 +533,10 @@ $(document).ready(function(){
     data.map = new Map();
 
     socket.on('set', function (input) {
-
-        console.log(input);
-
         let id = input.id;
         let obj = input.obj;
 
         data[id] = deserializers[obj.deserializeFunction](obj.data);
-
-        //Send Update to the Server
-        /*setInterval(function(){ 
-
-            if(me.changes.length > 0)
-            {
-                var msg = {};
-                for(var index in me.changes)
-                {
-                    var key = me.changes[index];
-                    msg[key] = me[key];
-                }
-                me.changes = [];
-
-                socket.emit("update", msg);
-            }
-        }, 1000 / TechnicalConfig.clientToServerComRate);*/
     });
 
     socket.on('update', function (data) {
@@ -575,11 +571,17 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi);        
+    let render = new Render(pixi, ["player", "player_max"]);        
 
     var logic = new ClientLogic();
     logic.initMouseInput(canvas);
     logic.initKeyboardInput();
+
+    //Render loop
+    setInterval(function(){
+        if(render != undefined && data.map != undefined && me != undefined)
+            render.drawFrame(me, data.map);
+    }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
     /*setInterval(function(){
@@ -590,15 +592,23 @@ $(document).ready(function(){
         logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);*/
 
-    //Render loop
-    setInterval(function(){
-        if(render != undefined && data.map != undefined && me != undefined)
-            render.drawFrame(me, data.map);
-    }, 1000 / TechnicalConfig.clientFramerate);
+    //Send Update to the Server
+    /*setInterval(function(){ 
 
+        if(me.changes.length > 0)
+        {
+            var msg = {};
+            for(var index in me.changes)
+            {
+                var key = me.changes[index];
+                msg[key] = me[key];
+            }
+            me.changes = [];
+
+            socket.emit("update", msg);
+        }
+    }, 1000 / TechnicalConfig.clientToServerComRate);*/
 });
-
-//Todo: File too long
 },{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":4,"./MapObject.js":5,"./Render.js":6}],9:[function(require,module,exports){
 arguments[4][2][0].apply(exports,arguments)
 },{"dup":2}],10:[function(require,module,exports){

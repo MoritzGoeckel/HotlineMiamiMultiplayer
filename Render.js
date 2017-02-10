@@ -6,32 +6,47 @@ module.exports = class Render{
         if(this.resources != undefined)
         {
             var base = this;
-
             let playerObject = map.getObject(me.owned['playerMapObject']);
             
             var objs = map.getObjectsNear(playerObject.pos, 2000);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
-                if(value.sprite == undefined){
-                    value.sprite = new PIXI.Sprite(base.resources[value.texture].texture);
-                    value.sprite.anchor.x = 0.5;
-                    value.sprite.anchor.y = 0.5;
-                    base.stage.addChild(value.sprite);
+                if(base.sprites[value.id] == undefined){
+                    base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
+                    base.sprites[value.id].anchor.x = 0.5;
+                    base.sprites[value.id].anchor.y = 0.5;
+                    base.stage.addChild(base.sprites[value.id]);
                 }
 
-                value.sprite.rotation = value.dir;
-                value.sprite.position = value.pos;
+                base.sprites[value.id].rotation = value.dir;
+                base.sprites[value.id].position = value.pos;
             });
+
+            //Check if you have to remove objects
+            if(objs.length < Object.keys(this.sprites))
+            {
+                let stillExistingSprites = {};
+                for(let i in objs)
+                    stillExistingSprites[objs[i].id] = this.sprites[objs[i].id];
+                
+                for(let i in this.sprites){
+                    if(stillExistingSprites[i] == undefined){
+                        this.removeSprite(this.sprites[i]);
+                    }
+                }
+            }
 
             this.pixi.render(this.stage);
         }
     }
 
-    removeSprite(sprite)
+    removeSprite(objectId)
     {
+        let sprite = this.sprites[objectId];
+        delete this.sprites[objectId];
         this.stage.removeChild(sprite)
     }
 
-    constructor(pixi)
+    constructor(pixi, textures)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
@@ -39,8 +54,8 @@ module.exports = class Render{
         var base = this;
 
         var loader = PIXI.loader;
-        loader.add('player', 'graphics/player.png');
-        loader.add('player_max', 'graphics/player_max.png');
+        for(let i in textures)
+            loader.add(textures[i], 'graphics/' + textures[i] + '.png');
 
         loader.once('complete', function(e){
             base.resources = e.resources;
@@ -49,5 +64,6 @@ module.exports = class Render{
         loader.load();
 
         this.pixi.backgroundColor = 0xFFFFFF;
+        this.sprites = {};
     }
 }
