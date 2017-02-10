@@ -9,6 +9,37 @@ module.exports = class ClientLogic {
         this.fireRate = 1000 / 3;
     }
 
+    initMouseInput(canvas){
+        this.mouse = {};
+        this.mouse.buttonsArray = [false, false, false, false, false, false, false, false, false];
+        let theBase = this;
+        document.onmousedown = function(e) {
+            theBase.mouse.buttonsArray[e.button] = true;
+        };
+        document.onmouseup = function(e) {
+            theBase.mouse.buttonsArray[e.button] = false;
+        };
+
+        canvas.addEventListener('mousemove', function(evt) {
+            theBase.mouse.pos = getMousePos(canvas, evt);
+        }, false);
+
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+    }
+
+    initKeyboardInput(){
+        this.keys = [];
+        let theBase = this;
+        window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
+        window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+    }
+
     updateProjectiles(me, map, projectiles)
     {
 

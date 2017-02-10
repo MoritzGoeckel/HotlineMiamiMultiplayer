@@ -31,7 +31,7 @@ module.exports = class Render{
         this.stage.removeChild(sprite)
     }
 
-    constructor(map, pixi)
+    constructor(pixi)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
