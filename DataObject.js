@@ -14,8 +14,11 @@ module.exports = class{
             if(this.internal[key] != value){
                 this.internal[key] = value;
                 this.changes[key] = true;
-                for(let listener in this.changeListener[key])
-                    listener(key, value);
+                
+                if(this.changeListener[key] != undefined)
+                    for(let i in this.changeListener[key]){
+                        this.changeListener[key][i](key, value);
+                    }
             }
         }
         else
@@ -28,9 +31,6 @@ module.exports = class{
     }
 
     setOnChangeListener(key, callback){
-        if(this.changeListener[key] == undefined)
-            this.changeListener = [];
-
         if(this.changeListener[key] == undefined)
             this.changeListener[key] = [];
 
@@ -50,8 +50,11 @@ module.exports = class{
     applyUpdateMessage(msg){
         for(let key in msg){
             this.internal[key] = msg[key];
-            for(let listener in this.changeListener[key])
-                listener(key, msg[key]);
+
+            if(this.changeListener[key] != undefined)
+                for(let i in this.changeListener[key]){
+                    this.changeListener[key][i](key, msg[key]);
+                }
         }
     }
 

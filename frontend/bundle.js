@@ -46,7 +46,7 @@ module.exports = class ClientLogic {
 
     }
 
-    updateMovement(me, map, keys, mouse, triggerFire)
+    updateMovement(me, map, object)
     {        
         let now = new Date().getTime();
         var delta = now - this.lastUpdateMovement;
@@ -57,46 +57,47 @@ module.exports = class ClientLogic {
 
         function changeMe(key, value)
         {
-            if(key == "dir" || key == "pos") //Could also be other things
-                map.getObject(me.id).dataObject.setAsOwner(key, value);
+            if(key == "dir" || key == "pos"){ //Could also be other things
+                object.dataObject.setAsOwner(me.id, key, value);
+            }
         }
 
-        if(mouse != undefined && me.pos != undefined && mouse.pos != undefined)
+        if(this.mouse != undefined && this.mouse.pos != undefined)
         {
-            var courserToPlayer = vMath.sub(mouse.pos, me.pos);
+            var courserToPlayer = vMath.sub(this.mouse.pos, object.pos);
             var courserDistance = vMath.len(courserToPlayer);
             
             var newDir = Math.atan2(courserToPlayer.y, courserToPlayer.x);
 
-            if(newDir != me.dir)
+            if(newDir != object.dir)
                 changeMe("dir", newDir);
             
             courserToPlayer = vMath.norm(courserToPlayer);
             var movement = {x:0, y:0};
 
-            if(mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
             {
                 this.lastFireTime = now;
-                triggerFire();
+                //triggerFire();
             }
 
             //W
-            if(keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
+            if(this.keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
             {
                 movement = vMath.add(movement, courserToPlayer);
             }
             //S
-            if(keys["83"])
+            if(this.keys["83"])
             {
                 movement = vMath.sub(movement, courserToPlayer);
             }
             //A
-            if(keys["68"])
+            if(this.keys["68"])
             {
                 movement = vMath.add(movement, vMath.ortho(courserToPlayer));
             }
             //D
-            if(keys["65"])
+            if(this.keys["65"])
             {
                 movement = vMath.sub(movement, vMath.ortho(courserToPlayer));
             }
@@ -106,13 +107,13 @@ module.exports = class ClientLogic {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
-                var oldPos = me.pos;
-                var newPos = vMath.add(me.pos, movement); //courserDistance ??? todo:
+                var oldPos = object.pos;
+                var newPos = vMath.add(object.pos, movement); //courserDistance ??? todo:
 
                 //Check collision
-                map.getObject(me.id).changePosDir(newPos, undefined);
+                object.changePosDir(newPos, undefined);
 
-                var collidingObjs = map.checkCollision(map.getObject(me.id), 500);
+                var collidingObjs = map.checkCollision(object, 500);
 
                 if(collidingObjs === false)
                 {
@@ -141,14 +142,14 @@ module.exports = class ClientLogic {
                     else if(colliding == false && speedChange != undefined)
                     {
                         //Slow down
-                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, speedChange));
-                        map.getObject(me.id).changePosDir(alternativeNewPos, undefined);
+                        var alternativeNewPos = vMath.add(object.pos, vMath.multScalar(movement, speedChange));
+                        object.changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
                     }
                     else if(colliding)
                     {
                         //It is coliding, get back to old position
-                        map.getObject(me.id).changePosDir(oldPos, undefined);
+                        object.changePosDir(oldPos, undefined);
                         //changeMe("pos", oldPos);    
                     }
                 }
@@ -194,8 +195,11 @@ module.exports = class{
             if(this.internal[key] != value){
                 this.internal[key] = value;
                 this.changes[key] = true;
-                for(let listener in this.changeListener[key])
-                    listener(key, value);
+                
+                if(this.changeListener[key] != undefined)
+                    for(let i in this.changeListener[key]){
+                        this.changeListener[key][i](key, value);
+                    }
             }
         }
         else
@@ -208,9 +212,6 @@ module.exports = class{
     }
 
     setOnChangeListener(key, callback){
-        if(this.changeListener[key] == undefined)
-            this.changeListener = [];
-
         if(this.changeListener[key] == undefined)
             this.changeListener[key] = [];
 
@@ -230,8 +231,11 @@ module.exports = class{
     applyUpdateMessage(msg){
         for(let key in msg){
             this.internal[key] = msg[key];
-            for(let listener in this.changeListener[key])
-                listener(key, msg[key]);
+
+            if(this.changeListener[key] != undefined)
+                for(let i in this.changeListener[key]){
+                    this.changeListener[key][i](key, msg[key]);
+                }
         }
     }
 
@@ -379,12 +383,13 @@ module.exports = class MapObject{
     }
 
     setListeners(){
+        let theBase = this;
         this.dataObject.setOnChangeListener("pos", function(key, value){
-            changePosDir(value, undefined);
+            theBase.changePosDir(value, undefined);
         });
 
         this.dataObject.setOnChangeListener("dir", function(key, value){
-            changePosDir(undefined, key);
+            theBase.changePosDir(undefined, value);
         });
     }
 
@@ -645,14 +650,24 @@ $(document).ready(function(){
         data[id] = deserializers[obj.deserializeFunction](obj.data);
     });
 
-    socket.on('update', function (data) {
+    socket.on('update', function (msg) {
+        for(let objectId in msg)
+        {
+            let found = false;
+            for(let i in me.owned)
+                if(me.owned[i] == objectId){
+                    found = true;
+                    break;
+                }
 
-        /*if(data["dir"] != undefined || data["pos"] != undefined)
-            map.getObject(data.id).changePosDir(data["pos"], data["dir"]);
+            if(found == false)
+                data.map.getObject(objectId).dataObject.applyUpdateMessage(msg[objectId]);
+        }
+    });
 
-        for(var key in data)
-            if(players[data.id] != undefined)
-                players[data.id][key] = data[key];*/
+    socket.on("create", function(msg){
+        if(data.map.getObject(msg.id) == undefined)
+            data.map.addObject(new MapObject().deserialize(msg));
     });
 
     var players = {};
@@ -690,22 +705,24 @@ $(document).ready(function(){
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
-    /*setInterval(function(){
-        logic.updateMovement(me, map, keys, mouse, function(){
-            socket.emit("trigger_fire", {pos:me.pos, dir:me.dir});
-        });
+    setInterval(function(){
+        if(me != undefined && data.map != undefined)
+            logic.updateMovement(me, data.map, data.map.getObject(me.owned["playerMapObject"]));
         
-        logic.updateProjectiles(me, map, projectiles);
-    }, 1000 / TechnicalConfig.clientTickrate);*/
+        //logic.updateProjectiles(me, map, projectiles);
+    }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server
     setInterval(function(){ 
 
-        if(me != undefined && me.owned != undefined)
+        if(me != undefined && me.owned != undefined){
+            let updateMsg = {};
             for(let key in me.owned)
-            {
-                let msg = data.map.getObject(me.owned[key]).dataObject.getUpdateMessage();
-            }
+                updateMsg[me.owned[key]] = data.map.getObject(me.owned[key]).dataObject.getUpdateMessage();
+            
+            socket.emit("update", updateMsg);
+        }
+            
 
     }, 1000 / TechnicalConfig.clientToServerComRate);
 });

@@ -45,7 +45,7 @@ module.exports = class ClientLogic {
 
     }
 
-    updateMovement(me, map, keys, mouse, triggerFire)
+    updateMovement(me, map, object)
     {        
         let now = new Date().getTime();
         var delta = now - this.lastUpdateMovement;
@@ -56,46 +56,47 @@ module.exports = class ClientLogic {
 
         function changeMe(key, value)
         {
-            if(key == "dir" || key == "pos") //Could also be other things
-                map.getObject(me.id).dataObject.setAsOwner(key, value);
+            if(key == "dir" || key == "pos"){ //Could also be other things
+                object.dataObject.setAsOwner(me.id, key, value);
+            }
         }
 
-        if(mouse != undefined && me.pos != undefined && mouse.pos != undefined)
+        if(this.mouse != undefined && this.mouse.pos != undefined)
         {
-            var courserToPlayer = vMath.sub(mouse.pos, me.pos);
+            var courserToPlayer = vMath.sub(this.mouse.pos, object.pos);
             var courserDistance = vMath.len(courserToPlayer);
             
             var newDir = Math.atan2(courserToPlayer.y, courserToPlayer.x);
 
-            if(newDir != me.dir)
+            if(newDir != object.dir)
                 changeMe("dir", newDir);
             
             courserToPlayer = vMath.norm(courserToPlayer);
             var movement = {x:0, y:0};
 
-            if(mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
             {
                 this.lastFireTime = now;
-                triggerFire();
+                //triggerFire();
             }
 
             //W
-            if(keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
+            if(this.keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
             {
                 movement = vMath.add(movement, courserToPlayer);
             }
             //S
-            if(keys["83"])
+            if(this.keys["83"])
             {
                 movement = vMath.sub(movement, courserToPlayer);
             }
             //A
-            if(keys["68"])
+            if(this.keys["68"])
             {
                 movement = vMath.add(movement, vMath.ortho(courserToPlayer));
             }
             //D
-            if(keys["65"])
+            if(this.keys["65"])
             {
                 movement = vMath.sub(movement, vMath.ortho(courserToPlayer));
             }
@@ -105,13 +106,13 @@ module.exports = class ClientLogic {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
-                var oldPos = me.pos;
-                var newPos = vMath.add(me.pos, movement); //courserDistance ??? todo:
+                var oldPos = object.pos;
+                var newPos = vMath.add(object.pos, movement); //courserDistance ??? todo:
 
                 //Check collision
-                map.getObject(me.id).changePosDir(newPos, undefined);
+                object.changePosDir(newPos, undefined);
 
-                var collidingObjs = map.checkCollision(map.getObject(me.id), 500);
+                var collidingObjs = map.checkCollision(object, 500);
 
                 if(collidingObjs === false)
                 {
@@ -140,14 +141,14 @@ module.exports = class ClientLogic {
                     else if(colliding == false && speedChange != undefined)
                     {
                         //Slow down
-                        var alternativeNewPos = vMath.add(me.pos, vMath.multScalar(movement, speedChange));
-                        map.getObject(me.id).changePosDir(alternativeNewPos, undefined);
+                        var alternativeNewPos = vMath.add(object.pos, vMath.multScalar(movement, speedChange));
+                        object.changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
                     }
                     else if(colliding)
                     {
                         //It is coliding, get back to old position
-                        map.getObject(me.id).changePosDir(oldPos, undefined);
+                        object.changePosDir(oldPos, undefined);
                         //changeMe("pos", oldPos);    
                     }
                 }

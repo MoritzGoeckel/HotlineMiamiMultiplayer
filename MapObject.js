@@ -20,12 +20,13 @@ module.exports = class MapObject{
     }
 
     setListeners(){
+        let theBase = this;
         this.dataObject.setOnChangeListener("pos", function(key, value){
-            changePosDir(value, undefined);
+            theBase.changePosDir(value, undefined);
         });
 
         this.dataObject.setOnChangeListener("dir", function(key, value){
-            changePosDir(undefined, key);
+            theBase.changePosDir(undefined, value);
         });
     }
 

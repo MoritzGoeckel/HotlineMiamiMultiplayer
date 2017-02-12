@@ -43,6 +43,8 @@ console.log('sockets on port ' + TechnicalConfig.socketPort);
 var players = [];
 var projectiles = [];
 
+let updates = {};
+
 server.on('connection', function(socket){    
     //Player connects
     var player = new Player(getNewId(), socket);
@@ -51,8 +53,7 @@ server.on('connection', function(socket){
     player.sendToOthers();
     player.addOwnedObject("playerMapObject", getNewId());
 
-    map.addObject(
-      new MapObject(
+    let object = new MapObject(
           {x:300 * Math.random(), y:300 * Math.random()}, 
           Math.random() * Math.PI, 
           player.getOwnedObject("playerMapObject"), 
@@ -60,8 +61,10 @@ server.on('connection', function(socket){
           new DataObject(player.id, getNewId())
         )
       .makeCollidableCircle(30)
-      .makeSpeedChange(0.2)
-    );
+      .makeSpeedChange(0.2);
+
+    map.addObject(object);
+    server.emit("create", object.serialize());
 
     player.sendObject("map", map.serialize());
 
@@ -74,65 +77,38 @@ server.on('connection', function(socket){
     });
 
     //Recieve update from player
-    /*socket.on('update', function(msg){
-        for(var objectId in msg)
-        {
-          if(player[key] != msg[key])
-          {
-            if(InputValidator.validateInput(key, player[key], msg[key], new Date().getTime() - player["lastUpdate_" + key])) //Validate the input
-            {
-              player[key] = msg[key];
-              player["lastUpdate_" + key] = new Date().getTime();
-              player.changes.push(key);            
-            }
-            else
-            {
-              console.error(player.id + " illegeal action!");
-            }
-          }
+      socket.on('update', function(msg){
+        for(var objectId in msg){
+          map.getObject(objectId).dataObject.applyUpdateMessage(msg[objectId]);
+          if(updates[objectId] == undefined)
+            updates[objectId] = {};
+          
+          for(let key in msg[objectId])
+            updates[objectId][key] = true;
         }
-    });*/
+    });
 
     /*socket.on("trigger_fire", function(msg){
       projectiles.push(new Projectile(msg.pos, msg.dir, ))
     });*/
 
 });
+
 //Send UPDATE to other players
-/*setInterval(function() {
+setInterval(function() {
 
-  players.forEach(function(player){
-    if(player.changes.length > 0)
-    {
-        var playerUpdateMsg = {};
-        for(var index in player.changes)
-        {
-            var key = player.changes[index];
-            playerUpdateMsg[key] = player[key];
-        }
-        player.changes = [];
+  let msg = {};
+  for(let objectId in updates){
+    msg[objectId] = {};
+    for(let key in updates[objectId])
+      msg[objectId][key] = map.getObject(objectId).dataObject.get(key);
+  }
 
-        //To make it useable
-        playerUpdateMsg.id = player.id;
+  server.emit("update", msg);
+  updates = {};
 
-        //Todo: Bundle the messages
-        player.socket.broadcast.emit("player_update", playerUpdateMsg); //To everyone except the player
-
-        //projectiles_update
-    }
-  });
-
-}, 1000 / TechnicalConfig.serverToClientComRate);*/
-
-//Send FULL INFO to other players
-/*setInterval(function() {
-
-  players.forEach(function(player){
-        player.socket.broadcast.emit("player_full_info", player.serialize()); //To everyone except the player
-  });
-
-}, 1000 / TechnicalConfig.serverToClientFullUpdateRate);
+}, 1000 / TechnicalConfig.serverToClientComRate);
 
 setInterval(function(){
   //Todo: Logic
-}, 1000 / TechnicalConfig.serverTickrate);*/
+}, 1000 / TechnicalConfig.serverTickrate);

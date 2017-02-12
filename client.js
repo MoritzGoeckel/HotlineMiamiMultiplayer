@@ -24,14 +24,24 @@ $(document).ready(function(){
         data[id] = deserializers[obj.deserializeFunction](obj.data);
     });
 
-    socket.on('update', function (data) {
+    socket.on('update', function (msg) {
+        for(let objectId in msg)
+        {
+            let found = false;
+            for(let i in me.owned)
+                if(me.owned[i] == objectId){
+                    found = true;
+                    break;
+                }
 
-        /*if(data["dir"] != undefined || data["pos"] != undefined)
-            map.getObject(data.id).changePosDir(data["pos"], data["dir"]);
+            if(found == false)
+                data.map.getObject(objectId).dataObject.applyUpdateMessage(msg[objectId]);
+        }
+    });
 
-        for(var key in data)
-            if(players[data.id] != undefined)
-                players[data.id][key] = data[key];*/
+    socket.on("create", function(msg){
+        if(data.map.getObject(msg.id) == undefined)
+            data.map.addObject(new MapObject().deserialize(msg));
     });
 
     var players = {};
@@ -69,22 +79,24 @@ $(document).ready(function(){
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
-    /*setInterval(function(){
-        logic.updateMovement(me, map, keys, mouse, function(){
-            socket.emit("trigger_fire", {pos:me.pos, dir:me.dir});
-        });
+    setInterval(function(){
+        if(me != undefined && data.map != undefined)
+            logic.updateMovement(me, data.map, data.map.getObject(me.owned["playerMapObject"]));
         
-        logic.updateProjectiles(me, map, projectiles);
-    }, 1000 / TechnicalConfig.clientTickrate);*/
+        //logic.updateProjectiles(me, map, projectiles);
+    }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server
     setInterval(function(){ 
 
-        if(me != undefined && me.owned != undefined)
+        if(me != undefined && me.owned != undefined){
+            let updateMsg = {};
             for(let key in me.owned)
-            {
-                let msg = data.map.getObject(me.owned[key]).dataObject.getUpdateMessage();
-            }
+                updateMsg[me.owned[key]] = data.map.getObject(me.owned[key]).dataObject.getUpdateMessage();
+            
+            socket.emit("update", updateMsg);
+        }
+            
 
     }, 1000 / TechnicalConfig.clientToServerComRate);
 });
