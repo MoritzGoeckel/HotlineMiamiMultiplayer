@@ -5,12 +5,28 @@ var DataObject = require("./DataObject.js");
 
 module.exports = class MapObject{
 
-    constructor(pos, dir, id, texture)
+    constructor(pos, dir, id, texture, dataObject)
     {
-        this.pos = pos;
         this.id = id;
+
+        this.pos = pos;
         this.dir = dir;
         this.texture = texture;
+
+        if(dataObject != undefined){
+            this.dataObject = dataObject;
+            this.setListeners();
+        }
+    }
+
+    setListeners(){
+        this.dataObject.setOnChangeListener("pos", function(key, value){
+            changePosDir(value, undefined);
+        });
+
+        this.dataObject.setOnChangeListener("dir", function(key, value){
+            changePosDir(undefined, key);
+        });
     }
 
     changePosDir(newPos, newDir)
@@ -110,12 +126,25 @@ module.exports = class MapObject{
         if(this.speedChange != undefined)
             output.speedChange = this.speedChange;
 
+        if(this.dataObject != undefined){
+            output.dataObject = this.dataObject.serialize();
+        }
+
         return output; 
     }
 
     deserialize(input)
     {
         for(var key in input)
-            this[key] = input[key];
+            if(key == "dataObject")
+                this.dataObject = new DataObject().deserialize(input[key]);
+            else
+                this[key] = input[key];
+        
+
+        if(this.dataObject != undefined)
+            this.setListeners();
+
+        return this;
     }
 };

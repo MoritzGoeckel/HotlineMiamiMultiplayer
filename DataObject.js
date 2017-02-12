@@ -3,6 +3,7 @@ module.exports = class{
     {
         this.id = id;
         this.owner = owner;
+
         this.internal = {};
         this.changeListener = {};
     }
@@ -14,7 +15,7 @@ module.exports = class{
                 this.internal[key] = value;
                 this.changes[key] = true;
                 for(let listener in this.changeListener[key])
-                    listener(value);
+                    listener(key, value);
             }
         }
         else
@@ -29,6 +30,9 @@ module.exports = class{
     setOnChangeListener(key, callback){
         if(this.changeListener[key] == undefined)
             this.changeListener = [];
+
+        if(this.changeListener[key] == undefined)
+            this.changeListener[key] = [];
 
         this.changeListener[key].push(callback);
     }
@@ -47,7 +51,25 @@ module.exports = class{
         for(let key in msg){
             this.internal[key] = msg[key];
             for(let listener in this.changeListener[key])
-                listener(msg[key]);
+                listener(key, msg[key]);
         }
+    }
+
+    serialize(){
+        let output = {};
+
+        output.id = this.id;
+        output.owner = this.owner;
+        output.internal = this.internal;
+
+        return output;
+    }
+
+    deserialize(input){
+        this.id = input.id;
+        this.owner = input.owner;
+        this.internal = input.internal;
+
+        return this;
     }
 }

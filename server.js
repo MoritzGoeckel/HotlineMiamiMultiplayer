@@ -10,6 +10,8 @@ var GameplayConfig = require('./config/Gameplay');
 
 var Map = require('./Map.js');
 var MapObject = require('./MapObject.js');
+var DataObject = require('./DataObject.js');
+
 
 function createNewIDFunction()
 {
@@ -23,8 +25,8 @@ var getNewId = createNewIDFunction();
 
 //Generate map
 var map = new Map();
-map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max").makeCollidableCircle(30));
-map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max").makeCollidableCircle(30).makeSpeedChange(0.2));
+map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30));
+map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30).makeSpeedChange(0.2));
 
 //Expose frontend
 var express = Express();
@@ -48,13 +50,14 @@ server.on('connection', function(socket){
 
     player.sendToOthers();
     player.addOwnedObject("playerMapObject", getNewId());
-    
+
     map.addObject(
       new MapObject(
           {x:300 * Math.random(), y:300 * Math.random()}, 
           Math.random() * Math.PI, 
           player.getOwnedObject("playerMapObject"), 
-          "player"
+          "player",
+          new DataObject(player.id, getNewId())
         )
       .makeCollidableCircle(30)
       .makeSpeedChange(0.2)
@@ -71,7 +74,7 @@ server.on('connection', function(socket){
     });
 
     //Recieve update from player
-    socket.on('update', function(msg){
+    /*socket.on('update', function(msg){
         for(var objectId in msg)
         {
           if(player[key] != msg[key])
@@ -88,7 +91,7 @@ server.on('connection', function(socket){
             }
           }
         }
-    });
+    });*/
 
     /*socket.on("trigger_fire", function(msg){
       projectiles.push(new Projectile(msg.pos, msg.dir, ))

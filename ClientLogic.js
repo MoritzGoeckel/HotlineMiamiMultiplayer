@@ -56,11 +56,8 @@ module.exports = class ClientLogic {
 
         function changeMe(key, value)
         {
-            if(key == "dir" || key == "pos")
-                map.getObject(me.id)[key] = value;
-
-            me[key] = value;
-            me.changes.push(key);
+            if(key == "dir" || key == "pos") //Could also be other things
+                map.getObject(me.id).dataObject.setAsOwner(key, value);
         }
 
         if(mouse != undefined && me.pos != undefined && mouse.pos != undefined)
@@ -119,7 +116,7 @@ module.exports = class ClientLogic {
                 if(collidingObjs === false)
                 {
                     changeMe("pos", newPos);
-                ß}
+                }
                 else
                 {
                     let colliding = false;
@@ -151,7 +148,7 @@ module.exports = class ClientLogic {
                     {
                         //It is coliding, get back to old position
                         map.getObject(me.id).changePosDir(oldPos, undefined);
-                        changeMe("pos", oldPos);    
+                        //changeMe("pos", oldPos);    
                     }
                 }
             }
