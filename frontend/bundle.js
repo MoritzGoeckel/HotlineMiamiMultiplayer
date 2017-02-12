@@ -41,11 +41,6 @@ module.exports = class ClientLogic {
         window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
     }
 
-    updateProjectiles(me, map, projectiles)
-    {
-
-    }
-
     updateMovement(me, map, riseEvent)
     {        
         let now = new Date().getTime();
@@ -490,6 +485,9 @@ module.exports = class MapObject{
         if(this.speedChange != undefined)
             output.speedChange = this.speedChange;
 
+        if(this.projectile != undefined)
+            output.projectile = this.projectile;
+
         if(this.dataObject != undefined){
             output.dataObject = this.dataObject.serialize();
         }
@@ -508,6 +506,9 @@ module.exports = class MapObject{
 
         if(this.dataObject != undefined)
             this.setListeners();
+
+        if(this.projectile != undefined)
+            this.makeProjectile(this.projectile);
 
         return this;
     }
@@ -712,8 +713,10 @@ $(document).ready(function(){
                 me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
 
             logic.updateMovement(me, data.map, function(event){
-                if(event == "fire")
-                    socket.emit("rise_event", {pos:me.playerMapObject.pos, dir:me.playerMapObject.dir});
+                if(event == "fire"){
+                    socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    console.log("Fire");
+                }
             });
         
         //logic.updateProjectiles(me, map, projectiles);
@@ -733,6 +736,34 @@ $(document).ready(function(){
 
     }, 1000 / TechnicalConfig.clientToServerComRate);
 });
+
+/*
+
+    Do the projectile somehow
+
+    makeProjectile(demage, movement, map){
+        this.projectile = demage;
+
+        this.projectileInterval = setInterval(function(){        
+            let coll = map.checkCollision(projectile, 1000);
+            if(coll != false){
+                for(let c in coll)
+                    if(coll[c].onDemage != undefined)
+                        coll[c].onDemage(projectile.demage);
+                
+                //Todo: Destroy the projectile ... do that also on the server
+            }
+            this.changePosDir(this.pos + movement, undefined);
+        }, 10);
+    }
+
+    dump(){
+        if(this.projectileInterval != undefined)
+            clearInterval(this.projectileInterval);
+        
+    }
+
+*/
 },{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":5,"./MapObject.js":6,"./Render.js":7}],10:[function(require,module,exports){
 arguments[4][2][0].apply(exports,arguments)
 },{"dup":2}],11:[function(require,module,exports){

@@ -40,11 +40,6 @@ module.exports = class ClientLogic {
         window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
     }
 
-    updateProjectiles(me, map, projectiles)
-    {
-
-    }
-
     updateMovement(me, map, riseEvent)
     {        
         let now = new Date().getTime();

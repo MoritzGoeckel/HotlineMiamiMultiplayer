@@ -127,6 +127,9 @@ module.exports = class MapObject{
         if(this.speedChange != undefined)
             output.speedChange = this.speedChange;
 
+        if(this.projectile != undefined)
+            output.projectile = this.projectile;
+
         if(this.dataObject != undefined){
             output.dataObject = this.dataObject.serialize();
         }
@@ -145,6 +148,9 @@ module.exports = class MapObject{
 
         if(this.dataObject != undefined)
             this.setListeners();
+
+        if(this.projectile != undefined)
+            this.makeProjectile(this.projectile);
 
         return this;
     }

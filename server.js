@@ -89,7 +89,18 @@ server.on('connection', function(socket){
     });
 
     socket.on("rise_event", function(msg){
-      
+      if(msg.mode == "fire"){
+        let object = new MapObject(
+            msg.pos, 
+            msg.dir, -1, 
+            "player_max",
+            new DataObject(-1, getNewId())
+          )
+        .makeCollidableCircle(30);
+
+        map.addObject(object);
+        server.emit("create", object.serialize());
+      }
     });
 
     /*socket.on("trigger_fire", function(msg){

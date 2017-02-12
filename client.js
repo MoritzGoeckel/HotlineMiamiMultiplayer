@@ -86,8 +86,10 @@ $(document).ready(function(){
                 me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
 
             logic.updateMovement(me, data.map, function(event){
-                if(event == "fire")
-                    socket.emit("rise_event", {pos:me.playerMapObject.pos, dir:me.playerMapObject.dir});
+                if(event == "fire"){
+                    socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    console.log("Fire");
+                }
             });
         
         //logic.updateProjectiles(me, map, projectiles);
@@ -107,3 +109,31 @@ $(document).ready(function(){
 
     }, 1000 / TechnicalConfig.clientToServerComRate);
 });
+
+/*
+
+    Do the projectile somehow
+
+    makeProjectile(demage, movement, map){
+        this.projectile = demage;
+
+        this.projectileInterval = setInterval(function(){        
+            let coll = map.checkCollision(projectile, 1000);
+            if(coll != false){
+                for(let c in coll)
+                    if(coll[c].onDemage != undefined)
+                        coll[c].onDemage(projectile.demage);
+                
+                //Todo: Destroy the projectile ... do that also on the server
+            }
+            this.changePosDir(this.pos + movement, undefined);
+        }, 10);
+    }
+
+    dump(){
+        if(this.projectileInterval != undefined)
+            clearInterval(this.projectileInterval);
+        
+    }
+
+*/
