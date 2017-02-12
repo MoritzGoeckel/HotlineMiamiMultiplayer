@@ -88,6 +88,10 @@ server.on('connection', function(socket){
         }
     });
 
+    socket.on("rise_event", function(msg){
+      
+    });
+
     /*socket.on("trigger_fire", function(msg){
       projectiles.push(new Projectile(msg.pos, msg.dir, ))
     });*/

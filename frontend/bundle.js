@@ -46,7 +46,7 @@ module.exports = class ClientLogic {
 
     }
 
-    updateMovement(me, map, object)
+    updateMovement(me, map, riseEvent)
     {        
         let now = new Date().getTime();
         var delta = now - this.lastUpdateMovement;
@@ -58,18 +58,18 @@ module.exports = class ClientLogic {
         function changeMe(key, value)
         {
             if(key == "dir" || key == "pos"){ //Could also be other things
-                object.dataObject.setAsOwner(me.id, key, value);
+                me.playerObject.dataObject.setAsOwner(me.id, key, value);
             }
         }
 
         if(this.mouse != undefined && this.mouse.pos != undefined)
         {
-            var courserToPlayer = vMath.sub(this.mouse.pos, object.pos);
+            var courserToPlayer = vMath.sub(this.mouse.pos, me.playerObject.pos);
             var courserDistance = vMath.len(courserToPlayer);
             
             var newDir = Math.atan2(courserToPlayer.y, courserToPlayer.x);
 
-            if(newDir != object.dir)
+            if(newDir != me.playerObject.dir)
                 changeMe("dir", newDir);
             
             courserToPlayer = vMath.norm(courserToPlayer);
@@ -78,7 +78,7 @@ module.exports = class ClientLogic {
             if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
             {
                 this.lastFireTime = now;
-                //triggerFire();
+                riseEvent("fire");
             }
 
             //W
@@ -107,13 +107,13 @@ module.exports = class ClientLogic {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
-                var oldPos = object.pos;
-                var newPos = vMath.add(object.pos, movement); //courserDistance ??? todo:
+                var oldPos = me.playerObject.pos;
+                var newPos = vMath.add(me.playerObject.pos, movement); //courserDistance ??? todo:
 
                 //Check collision
-                object.changePosDir(newPos, undefined);
+                me.playerObject.changePosDir(newPos, undefined);
 
-                var collidingObjs = map.checkCollision(object, 500);
+                var collidingObjs = map.checkCollision(me.playerObject, 500);
 
                 if(collidingObjs === false)
                 {
@@ -142,14 +142,14 @@ module.exports = class ClientLogic {
                     else if(colliding == false && speedChange != undefined)
                     {
                         //Slow down
-                        var alternativeNewPos = vMath.add(object.pos, vMath.multScalar(movement, speedChange));
-                        object.changePosDir(alternativeNewPos, undefined);
+                        var alternativeNewPos = vMath.add(me.playerObject.pos, vMath.multScalar(movement, speedChange));
+                        me.playerObject.changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
                     }
                     else if(colliding)
                     {
                         //It is coliding, get back to old position
-                        object.changePosDir(oldPos, undefined);
+                        me.playerObject.changePosDir(oldPos, undefined);
                         //changeMe("pos", oldPos);    
                     }
                 }
@@ -707,7 +707,14 @@ $(document).ready(function(){
     //Logic loop
     setInterval(function(){
         if(me != undefined && data.map != undefined)
-            logic.updateMovement(me, data.map, data.map.getObject(me.owned["playerMapObject"]));
+
+            if(me.playerObject == undefined)
+                me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
+
+            logic.updateMovement(me, data.map, function(event){
+                if(event == "fire")
+                    socket.emit("rise_event", {pos:me.playerMapObject.pos, dir:me.playerMapObject.dir});
+            });
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);

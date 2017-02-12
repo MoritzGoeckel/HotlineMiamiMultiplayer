@@ -81,7 +81,14 @@ $(document).ready(function(){
     //Logic loop
     setInterval(function(){
         if(me != undefined && data.map != undefined)
-            logic.updateMovement(me, data.map, data.map.getObject(me.owned["playerMapObject"]));
+
+            if(me.playerObject == undefined)
+                me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
+
+            logic.updateMovement(me, data.map, function(event){
+                if(event == "fire")
+                    socket.emit("rise_event", {pos:me.playerMapObject.pos, dir:me.playerMapObject.dir});
+            });
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);
