@@ -51,12 +51,14 @@ server.on('connection', function(socket){
     
     map.addObject(
       new MapObject(
-        {x:300 * Math.random(), y:300 * Math.random()}, 
-        Math.random() * Math.PI, 
-        player.getOwnedObject("playerMapObject"), 
-        "player")
+          {x:300 * Math.random(), y:300 * Math.random()}, 
+          Math.random() * Math.PI, 
+          player.getOwnedObject("playerMapObject"), 
+          "player"
+        )
       .makeCollidableCircle(30)
-      .makeSpeedChange(0.2));
+      .makeSpeedChange(0.2)
+    );
 
     player.sendObject("map", map.serialize());
 

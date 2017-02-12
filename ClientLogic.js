@@ -109,7 +109,7 @@ module.exports = class ClientLogic {
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
                 var oldPos = me.pos;
-                var newPos = vMath.add(me.pos, movement);
+                var newPos = vMath.add(me.pos, movement); //courserDistance ??? todo:
 
                 //Check collision
                 map.getObject(me.id).changePosDir(newPos, undefined);
@@ -119,7 +119,7 @@ module.exports = class ClientLogic {
                 if(collidingObjs === false)
                 {
                     changeMe("pos", newPos);
-                }
+                ß}
                 else
                 {
                     let colliding = false;

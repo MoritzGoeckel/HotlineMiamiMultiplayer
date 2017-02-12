@@ -1,5 +1,7 @@
 var SAT = require('sat');
 var vMath = require("./VectorMath.js");
+var DataObject = require("./DataObject.js");
+
 
 module.exports = class MapObject{
 

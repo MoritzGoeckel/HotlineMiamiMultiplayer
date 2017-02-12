@@ -5,6 +5,8 @@ var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 
+var io = require("socket.io");
+
 $(document).ready(function(){
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
@@ -76,19 +78,12 @@ $(document).ready(function(){
     }, 1000 / TechnicalConfig.clientTickrate);*/
 
     //Send Update to the Server
-    /*setInterval(function(){ 
+    setInterval(function(){ 
 
-        if(me.changes.length > 0)
+        for(let key in me.ownedObjects)
         {
-            var msg = {};
-            for(var index in me.changes)
-            {
-                var key = me.changes[index];
-                msg[key] = me[key];
-            }
-            me.changes = [];
-
-            socket.emit("update", msg);
+            map.getObject(me.ownedObjects[key]).
         }
-    }, 1000 / TechnicalConfig.clientToServerComRate);*/
+
+    }, 1000 / TechnicalConfig.clientToServerComRate);
 });
