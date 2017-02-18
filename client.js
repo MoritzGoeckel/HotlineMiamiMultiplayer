@@ -133,7 +133,6 @@ $(document).ready(function(){
     dump(){
         if(this.projectileInterval != undefined)
             clearInterval(this.projectileInterval);
-        
     }
 
 */
