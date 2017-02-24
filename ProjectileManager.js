@@ -41,12 +41,12 @@ module.exports = class{
                     for(let a in collidingObjs){
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
                         {
-                            onHitObject(collidingObjs[a], removeBullet);
+                            onHitObject(collidingObjs[a], obj.movement, removeBullet);
                         }
 
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
                         {
-                            onHitPlayer(collidingObjs[a].playerId, removeBullet);
+                            onHitPlayer(collidingObjs[a].playerId, obj.movement, removeBullet);
                         }
                     }
                 }

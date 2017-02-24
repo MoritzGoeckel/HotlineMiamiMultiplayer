@@ -12,8 +12,8 @@ module.exports = class Render{
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(base.sprites[value.id] == undefined){
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
-                    base.sprites[value.id].anchor.x = 0.5;
-                    base.sprites[value.id].anchor.y = 0.5;
+                    base.sprites[value.id].anchor.x = .5;
+                    base.sprites[value.id].anchor.y = .5;
                     base.stage.addChild(base.sprites[value.id]);
                 }
 

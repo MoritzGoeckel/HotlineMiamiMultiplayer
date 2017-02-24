@@ -26,8 +26,18 @@ var getNewId = createNewIDFunction();
 
 //Generate map
 var map = new Map();
-map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30));
-map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30).makeSpeedChange(0.2));
+//map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30));
+//map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30).makeSpeedChange(0.2));
+
+map.addObject(new MapObject({x:200, y:100}, 0, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(144, 81));
+map.addObject(new MapObject({x:200, y:350}, Math.PI * 0.5, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(81, 144));
+
+map.addObject(new MapObject({x:200, y:500}, 0, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(144, 81));
+map.addObject(new MapObject({x:200, y:650}, Math.PI * 0.5, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(81, 144));
+
+map.addObject(new MapObject({x:200, y:800}, 0, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(144, 81));
+
+
 
 let projectileManager = new ProjectileManager();
 
@@ -63,7 +73,7 @@ server.on('connection', function(socket){
           "player",
           new DataObject(player.id, getNewId())
         )
-      .makeCollidableCircle(30)
+      .makeCollidableCircle(40)
       .makeSpeedChange(0.2)
       .makePlayer(player.id);
 
@@ -96,9 +106,9 @@ server.on('connection', function(socket){
 
     socket.on("rise_event", function(msg){
       if(msg.mode == "fire"){
-        projectileManager.addProjectile(map, 5, msg.pos, msg.dir, "player_max", player.id);
+        projectileManager.addProjectile(map, 10, msg.pos, msg.dir, "bullet", player.id);
         
-        let output = {speed:5, pos:msg.pos, dir:msg.dir, texture:"player_max", playerId:player.id};
+        let output = {speed:10, pos:msg.pos, dir:msg.dir, texture:"bullet", playerId:player.id};
         socket.broadcast.emit("create_projectile", output);
       }
     });
@@ -125,8 +135,20 @@ setInterval(function() {
 }, 1000 / TechnicalConfig.serverToClientComRate);
 
 setInterval(function(){
-  projectileManager.update(map, function(obj, rm){rm();}, function(playerId, rm){
+  projectileManager.update(map, function(obj, impact, rm){rm();}, function(playerId, impact, rm){
     //Todo: react to player hit
+
+    let pos = undefined;
+    for(let p in players)
+      if(players[p].id == playerId)
+        pos = map.getObject(players[p].getOwnedObject("playerMapObject")).pos;
+      
+    let bloodPos = vMath.add({x:pos.x, y:pos.y}, vMath.multScalar(vMath.norm(impact), 100 + Math.round(Math.random() * 200)));
+
+    let obj = new MapObject(bloodPos, 0, getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId()));
+    map.addObject(obj);
+    server.emit("create", obj.serialize());
+
     rm();
   });
 }, 1000 / TechnicalConfig.clientTickrate); //Server tickrate

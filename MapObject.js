@@ -84,8 +84,8 @@ module.exports = class MapObject{
     makeCollidableBox(width, height)
     {
         this.collisionMode = "poly";
-        var box = new SAT.Box(new SAT.Vector(this.pos.x, this.pos.y), width, height);
-        this.collision = box.toPolygon();
+        var box = new SAT.Box(new SAT.Vector(this.pos.x - width / 2, this.pos.y - height / 2), width, height);
+        this.polygon = box.toPolygon();
         return this;
     }
 

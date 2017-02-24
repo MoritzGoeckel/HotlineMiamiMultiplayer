@@ -26,7 +26,7 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi, ["player", "player_max"]);        
+    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3"]);        
 
     let projectileManager = new ProjectileManager();
 
@@ -106,11 +106,11 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max", me.id);
+                    projectileManager.addProjectile(data.map, 10, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 
-            projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
+            projectileManager.update(data.map, function(obj, impact, rm){rm();}, function(playerId, impact, rm){rm();});
     }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server

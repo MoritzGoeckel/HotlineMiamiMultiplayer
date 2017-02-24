@@ -165,8 +165,8 @@ module.exports = {
 },{}],3:[function(require,module,exports){
 module.exports = {
     serverTickrate:30, 
-    clientTickrate:100,
-    clientFramerate:100,
+    clientTickrate:300,
+    clientFramerate:300,
     clientToServerComRate:30,
     serverToClientComRate:30,
     serverToClientFullUpdateRate:1,
@@ -453,8 +453,8 @@ module.exports = class MapObject{
     makeCollidableBox(width, height)
     {
         this.collisionMode = "poly";
-        var box = new SAT.Box(new SAT.Vector(this.pos.x, this.pos.y), width, height);
-        this.collision = box.toPolygon();
+        var box = new SAT.Box(new SAT.Vector(this.pos.x - width / 2, this.pos.y - height / 2), width, height);
+        this.polygon = box.toPolygon();
         return this;
     }
 
@@ -584,12 +584,12 @@ module.exports = class{
                     for(let a in collidingObjs){
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
                         {
-                            onHitObject(collidingObjs[a], removeBullet);
+                            onHitObject(collidingObjs[a], obj.movement, removeBullet);
                         }
 
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
                         {
-                            onHitPlayer(collidingObjs[a].playerId, removeBullet);
+                            onHitPlayer(collidingObjs[a].playerId, obj.movement, removeBullet);
                         }
                     }
                 }
@@ -612,8 +612,8 @@ module.exports = class Render{
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(base.sprites[value.id] == undefined){
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
-                    base.sprites[value.id].anchor.x = 0.5;
-                    base.sprites[value.id].anchor.y = 0.5;
+                    base.sprites[value.id].anchor.x = .5;
+                    base.sprites[value.id].anchor.y = .5;
                     base.stage.addChild(base.sprites[value.id]);
                 }
 
@@ -737,7 +737,7 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi, ["player", "player_max"]);        
+    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3"]);        
 
     let projectileManager = new ProjectileManager();
 
@@ -817,11 +817,11 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max", me.id);
+                    projectileManager.addProjectile(data.map, 10, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 
-            projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
+            projectileManager.update(data.map, function(obj, impact, rm){rm();}, function(playerId, impact, rm){rm();});
     }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server
