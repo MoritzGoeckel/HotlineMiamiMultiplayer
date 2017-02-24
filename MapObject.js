@@ -50,6 +50,11 @@ module.exports = class MapObject{
         }
     }
 
+    makePlayer(playerId){
+        this.playerId = playerId;
+        return this;
+    }
+
     makeSpeedChange(factor)
     {
         this.speedChange = factor;
@@ -133,6 +138,9 @@ module.exports = class MapObject{
         if(this.dataObject != undefined){
             output.dataObject = this.dataObject.serialize();
         }
+
+        if(this.playerId != undefined)
+            output.playerId = this.playerId;
 
         return output; 
     }

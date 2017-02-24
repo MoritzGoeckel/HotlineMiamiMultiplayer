@@ -7,8 +7,16 @@ module.exports = class Map{
         this.collidableIds = {};
     }
 
+    setRemoveObjectListener(callback){
+        this.removeObjectListener = callback;
+    }
+
     removeObject(id)
     {
+        if(this.removeObjectListener != undefined){
+            this.removeObjectListener(this.objects[id]);
+        }
+
         delete this.objects[id];
         
         if(this.collidableIds[id] != undefined)

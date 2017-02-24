@@ -22,7 +22,7 @@ module.exports = class Render{
             });
 
             //Check if you have to remove objects
-            if(objs.length < Object.keys(this.sprites))
+            if(objs.length < Object.keys(this.sprites).length)
             {
                 let stillExistingSprites = {};
                 for(let i in objs)
@@ -30,7 +30,7 @@ module.exports = class Render{
                 
                 for(let i in this.sprites){
                     if(stillExistingSprites[i] == undefined){
-                        this.removeSprite(this.sprites[i]);
+                        this.removeSprite(i);
                     }
                 }
             }

@@ -156,7 +156,7 @@ module.exports = class ClientLogic {
         //Todo game logic / prediction
     }
 }
-},{"./VectorMath.js":8,"./config/Gameplay.js":10}],2:[function(require,module,exports){
+},{"./VectorMath.js":9,"./config/Gameplay.js":11}],2:[function(require,module,exports){
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
@@ -262,8 +262,16 @@ module.exports = class Map{
         this.collidableIds = {};
     }
 
+    setRemoveObjectListener(callback){
+        this.removeObjectListener = callback;
+    }
+
     removeObject(id)
     {
+        if(this.removeObjectListener != undefined){
+            this.removeObjectListener(this.objects[id]);
+        }
+
         delete this.objects[id];
         
         if(this.collidableIds[id] != undefined)
@@ -355,7 +363,7 @@ module.exports = class Map{
         return deserializer;
     }
 }
-},{"./MapObject.js":6,"./VectorMath.js":8}],6:[function(require,module,exports){
+},{"./MapObject.js":6,"./VectorMath.js":9}],6:[function(require,module,exports){
 var SAT = require('sat');
 var vMath = require("./VectorMath.js");
 var DataObject = require("./DataObject.js");
@@ -406,6 +414,11 @@ module.exports = class MapObject{
             if(newDir != undefined)
                 this.polygon.setAngle(newDir);
         }
+    }
+
+    makePlayer(playerId){
+        this.playerId = playerId;
+        return this;
     }
 
     makeSpeedChange(factor)
@@ -492,6 +505,9 @@ module.exports = class MapObject{
             output.dataObject = this.dataObject.serialize();
         }
 
+        if(this.playerId != undefined)
+            output.playerId = this.playerId;
+
         return output; 
     }
 
@@ -513,7 +529,54 @@ module.exports = class MapObject{
         return this;
     }
 };
-},{"./DataObject.js":4,"./VectorMath.js":8,"sat":11}],7:[function(require,module,exports){
+},{"./DataObject.js":4,"./VectorMath.js":9,"sat":12}],7:[function(require,module,exports){
+var Map = require("./Map.js");
+var MapObject = require("./MapObject.js");
+var vMath = require("./VectorMath.js");
+
+module.exports = class{
+    constructor(){
+        this.projectiles = {};
+        this.lastId = 0;
+    }
+
+    addProjectile(map, speed, position, direction, texture){
+        let theBase = this;
+
+        let id = "p_" + this.lastId++;
+
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4); //Client side
+        obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
+        map.addObject(obj);
+        this.projectiles[id] = true;
+    }
+
+    update(map){
+        for(let id in this.projectiles)
+        {
+            let obj = map.getObject(id);
+            obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
+
+            var collidingObjs = map.checkCollision(obj, 500);
+            if(collidingObjs != false){
+                for(let a in collidingObjs){
+                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
+                    {
+                        console.log("Intersect with collidable"); //Todo: Handle on server
+                        map.removeObject(id);
+                        delete this.projectiles[id];
+                    }
+
+                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined)
+                    {
+                        console.log("Intersect with player: " + collidingObjs[a].playerId); //Todo: Handle on server
+                    }
+                }
+            }
+        }
+    }
+}
+},{"./Map.js":5,"./MapObject.js":6,"./VectorMath.js":9}],8:[function(require,module,exports){
 var MapObject = require("./MapObject.js");
 
 module.exports = class Render{
@@ -538,7 +601,7 @@ module.exports = class Render{
             });
 
             //Check if you have to remove objects
-            if(objs.length < Object.keys(this.sprites))
+            if(objs.length < Object.keys(this.sprites).length)
             {
                 let stillExistingSprites = {};
                 for(let i in objs)
@@ -546,7 +609,7 @@ module.exports = class Render{
                 
                 for(let i in this.sprites){
                     if(stillExistingSprites[i] == undefined){
-                        this.removeSprite(this.sprites[i]);
+                        this.removeSprite(i);
                     }
                 }
             }
@@ -583,7 +646,7 @@ module.exports = class Render{
         this.sprites = {};
     }
 }
-},{"./MapObject.js":6}],8:[function(require,module,exports){
+},{"./MapObject.js":6}],9:[function(require,module,exports){
 module.exports = {
     add : function(vec1, vec2)
     {
@@ -624,20 +687,39 @@ module.exports = {
         return {x:-vec.y, y:vec.x};
     }
 }
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var ClientLogic = require("./ClientLogic.js");
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
-
+var ProjectileManager = require("./ProjectileManager.js");
 //var io = require("socket.io");
+
+function createNewIDFunction()
+{
+  var lastId = -100;
+  return function(){
+    return lastId--;
+  }
+}
+
+var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
     
+    //The canvas
+    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
+    var canvas = pixi.view;
+    document.getElementById("content").appendChild(canvas);
+
+    let render = new Render(pixi, ["player", "player_max"]);        
+
+    let projectileManager = new ProjectileManager();
+
     let deserializers = {};
     deserializers = new Map().updateDeserializer(deserializers);
 
@@ -681,19 +763,14 @@ $(document).ready(function(){
         players[player.id] = player;
     });
 
-    socket.on('disconnected', function (data) {   
-        console.log("disconnected " + data.id);
-        render.removeSprite(map.getObject(data.id).sprite);
-        map.removeObject(data.id);
-        delete players[data.id];
+    socket.on('disconnected', function (msg) {   
+        console.log("disconnected " + msg.id);
+        delete players[msg.id];
     });
 
-    //The canvas
-    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
-    var canvas = pixi.view;
-    document.getElementById("content").appendChild(canvas);
-
-    let render = new Render(pixi, ["player", "player_max"]);        
+    socket.on('destroy_object', function(msg){
+        data.map.removeObject(msg.id);
+    });
 
     var logic = new ClientLogic();
     logic.initMouseInput(canvas);
@@ -716,8 +793,12 @@ $(document).ready(function(){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
                     console.log("Fire");
+
+                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max");
                 }
             });
+
+            projectileManager.update(data.map);
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);
@@ -763,9 +844,9 @@ $(document).ready(function(){
     }
 
 */
-},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":5,"./MapObject.js":6,"./Render.js":7}],10:[function(require,module,exports){
+},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":5,"./MapObject.js":6,"./ProjectileManager.js":7,"./Render.js":8}],11:[function(require,module,exports){
 arguments[4][2][0].apply(exports,arguments)
-},{"dup":2}],11:[function(require,module,exports){
+},{"dup":2}],12:[function(require,module,exports){
 // Version 0.6.0 - Copyright 2012 - 2016 -  Jim Riecken <jimr@jimr.ca>
 //
 // Released under the MIT License - https://github.com/jriecken/sat-js
@@ -1755,4 +1836,4 @@ arguments[4][2][0].apply(exports,arguments)
   return SAT;
 }));
 
-},{}]},{},[9]);
+},{}]},{},[10]);

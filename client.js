@@ -4,13 +4,32 @@ var MapObject = require("./MapObject.js");
 var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
-
+var ProjectileManager = require("./ProjectileManager.js");
 //var io = require("socket.io");
+
+function createNewIDFunction()
+{
+  var lastId = -100;
+  return function(){
+    return lastId--;
+  }
+}
+
+var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
     
+    //The canvas
+    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
+    var canvas = pixi.view;
+    document.getElementById("content").appendChild(canvas);
+
+    let render = new Render(pixi, ["player", "player_max"]);        
+
+    let projectileManager = new ProjectileManager();
+
     let deserializers = {};
     deserializers = new Map().updateDeserializer(deserializers);
 
@@ -54,19 +73,14 @@ $(document).ready(function(){
         players[player.id] = player;
     });
 
-    socket.on('disconnected', function (data) {   
-        console.log("disconnected " + data.id);
-        render.removeSprite(map.getObject(data.id).sprite);
-        map.removeObject(data.id);
-        delete players[data.id];
+    socket.on('disconnected', function (msg) {   
+        console.log("disconnected " + msg.id);
+        delete players[msg.id];
     });
 
-    //The canvas
-    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
-    var canvas = pixi.view;
-    document.getElementById("content").appendChild(canvas);
-
-    let render = new Render(pixi, ["player", "player_max"]);        
+    socket.on('destroy_object', function(msg){
+        data.map.removeObject(msg.id);
+    });
 
     var logic = new ClientLogic();
     logic.initMouseInput(canvas);
@@ -89,8 +103,12 @@ $(document).ready(function(){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
                     console.log("Fire");
+
+                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max");
                 }
             });
+
+            projectileManager.update(data.map);
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);

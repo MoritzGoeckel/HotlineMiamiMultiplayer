@@ -61,7 +61,8 @@ server.on('connection', function(socket){
           new DataObject(player.id, getNewId())
         )
       .makeCollidableCircle(30)
-      .makeSpeedChange(0.2);
+      .makeSpeedChange(0.2)
+      .makePlayer(player.id);
 
     map.addObject(object);
     server.emit("create", object.serialize());
@@ -71,6 +72,8 @@ server.on('connection', function(socket){
     //Player disconnects
     socket.on('disconnect', function(){
       map.removeObject(player.getOwnedObject("playerMapObject"));
+      server.emit('destroy_object', {id:player.getOwnedObject("playerMapObject")});
+
       players = players.filter(function(value){ return value != player; });
       console.log(player.id + " disconnected");
       server.emit("disconnected", {id:player.id});
@@ -90,7 +93,7 @@ server.on('connection', function(socket){
 
     socket.on("rise_event", function(msg){
       if(msg.mode == "fire"){
-        let object = new MapObject(
+        /*let object = new MapObject(
             msg.pos, 
             msg.dir, -1, 
             "player_max",
@@ -99,7 +102,7 @@ server.on('connection', function(socket){
         .makeCollidableCircle(30);
 
         map.addObject(object);
-        server.emit("create", object.serialize());
+        server.emit("create", object.serialize());*/
       }
     });
 
