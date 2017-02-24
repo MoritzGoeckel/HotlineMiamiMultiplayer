@@ -160,7 +160,7 @@ module.exports = class ClientLogic {
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
-    playerCollisionRadius:30
+    playerCollisionRadius:100
 };
 },{}],3:[function(require,module,exports){
 module.exports = {
@@ -540,36 +540,45 @@ module.exports = class{
         this.lastId = 0;
     }
 
-    addProjectile(map, speed, position, direction, texture){
+    addProjectile(map, speed, position, direction, texture, playerId){
         let theBase = this;
 
         let id = "p_" + this.lastId++;
 
         let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4); //Client side
         obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
+        obj.bulletOwnerId = playerId;
+
         map.addObject(obj);
         this.projectiles[id] = true;
     }
 
-    update(map){
+    update(map, onHitObject, onHitPlayer){
         for(let id in this.projectiles)
         {
+            let theBase = this;
             let obj = map.getObject(id);
-            obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
+            if(obj != undefined)
+            {
+                obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
 
-            var collidingObjs = map.checkCollision(obj, 500);
-            if(collidingObjs != false){
-                for(let a in collidingObjs){
-                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
-                    {
-                        console.log("Intersect with collidable"); //Todo: Handle on server
-                        map.removeObject(id);
-                        delete this.projectiles[id];
-                    }
+                let removeBullet = function(){
+                    map.removeObject(id);
+                    delete theBase.projectiles[id];
+                }
 
-                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined)
-                    {
-                        console.log("Intersect with player: " + collidingObjs[a].playerId); //Todo: Handle on server
+                var collidingObjs = map.checkCollision(obj, 500);
+                if(collidingObjs != false){
+                    for(let a in collidingObjs){
+                        if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
+                        {
+                            onHitObject(collidingObjs[a], removeBullet);
+                        }
+
+                        if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
+                        {
+                            onHitPlayer(collidingObjs[a].playerId, removeBullet);
+                        }
                     }
                 }
             }
@@ -763,6 +772,10 @@ $(document).ready(function(){
         players[player.id] = player;
     });
 
+    socket.on('create_projectile', function (msg) {
+        projectileManager.addProjectile(data.map, msg.speed, msg.pos, msg.dir, msg.texture, msg.playerId);
+    });
+
     socket.on('disconnected', function (msg) {   
         console.log("disconnected " + msg.id);
         delete players[msg.id];
@@ -792,13 +805,11 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    console.log("Fire");
-
-                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max");
+                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max", me.id);
                 }
             });
 
-            projectileManager.update(data.map);
+            projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);

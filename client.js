@@ -73,6 +73,10 @@ $(document).ready(function(){
         players[player.id] = player;
     });
 
+    socket.on('create_projectile', function (msg) {
+        projectileManager.addProjectile(data.map, msg.speed, msg.pos, msg.dir, msg.texture, msg.playerId);
+    });
+
     socket.on('disconnected', function (msg) {   
         console.log("disconnected " + msg.id);
         delete players[msg.id];
@@ -102,13 +106,11 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    console.log("Fire");
-
-                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max");
+                    projectileManager.addProjectile(data.map, 5, me.playerObject.pos, me.playerObject.dir, "player_max", me.id);
                 }
             });
 
-            projectileManager.update(data.map);
+            projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
         
         //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);

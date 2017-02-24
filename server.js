@@ -12,6 +12,7 @@ var Map = require('./Map.js');
 var MapObject = require('./MapObject.js');
 var DataObject = require('./DataObject.js');
 
+var ProjectileManager = require("./ProjectileManager.js");
 
 function createNewIDFunction()
 {
@@ -27,6 +28,8 @@ var getNewId = createNewIDFunction();
 var map = new Map();
 map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30));
 map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30).makeSpeedChange(0.2));
+
+let projectileManager = new ProjectileManager();
 
 //Expose frontend
 var express = Express();
@@ -93,16 +96,10 @@ server.on('connection', function(socket){
 
     socket.on("rise_event", function(msg){
       if(msg.mode == "fire"){
-        /*let object = new MapObject(
-            msg.pos, 
-            msg.dir, -1, 
-            "player_max",
-            new DataObject(-1, getNewId())
-          )
-        .makeCollidableCircle(30);
-
-        map.addObject(object);
-        server.emit("create", object.serialize());*/
+        projectileManager.addProjectile(map, 5, msg.pos, msg.dir, "player_max", player.id);
+        
+        let output = {speed:5, pos:msg.pos, dir:msg.dir, texture:"player_max", playerId:player.id};
+        socket.broadcast.emit("create_projectile", output);
       }
     });
 
@@ -128,5 +125,5 @@ setInterval(function() {
 }, 1000 / TechnicalConfig.serverToClientComRate);
 
 setInterval(function(){
-  //Todo: Logic
-}, 1000 / TechnicalConfig.serverTickrate);
+  projectileManager.update(map, function(obj, rm){rm();}, function(playerId, rm){rm();});
+}, 1000 / TechnicalConfig.clientTickrate); //Server tickrate

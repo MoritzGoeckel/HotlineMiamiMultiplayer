@@ -8,36 +8,45 @@ module.exports = class{
         this.lastId = 0;
     }
 
-    addProjectile(map, speed, position, direction, texture){
+    addProjectile(map, speed, position, direction, texture, playerId){
         let theBase = this;
 
         let id = "p_" + this.lastId++;
 
         let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4); //Client side
         obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
+        obj.bulletOwnerId = playerId;
+
         map.addObject(obj);
         this.projectiles[id] = true;
     }
 
-    update(map){
+    update(map, onHitObject, onHitPlayer){
         for(let id in this.projectiles)
         {
+            let theBase = this;
             let obj = map.getObject(id);
-            obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
+            if(obj != undefined)
+            {
+                obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
 
-            var collidingObjs = map.checkCollision(obj, 500);
-            if(collidingObjs != false){
-                for(let a in collidingObjs){
-                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
-                    {
-                        console.log("Intersect with collidable"); //Todo: Handle on server
-                        map.removeObject(id);
-                        delete this.projectiles[id];
-                    }
+                let removeBullet = function(){
+                    map.removeObject(id);
+                    delete theBase.projectiles[id];
+                }
 
-                    if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined)
-                    {
-                        console.log("Intersect with player: " + collidingObjs[a].playerId); //Todo: Handle on server
+                var collidingObjs = map.checkCollision(obj, 500);
+                if(collidingObjs != false){
+                    for(let a in collidingObjs){
+                        if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
+                        {
+                            onHitObject(collidingObjs[a], removeBullet);
+                        }
+
+                        if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
+                        {
+                            onHitPlayer(collidingObjs[a].playerId, removeBullet);
+                        }
                     }
                 }
             }
