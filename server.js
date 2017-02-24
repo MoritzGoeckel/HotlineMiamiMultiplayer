@@ -143,9 +143,9 @@ setInterval(function(){
       if(players[p].id == playerId)
         pos = map.getObject(players[p].getOwnedObject("playerMapObject")).pos;
       
-    let bloodPos = vMath.add({x:pos.x, y:pos.y}, vMath.multScalar(vMath.norm(impact), 100 + Math.round(Math.random() * 200)));
+    let bloodPos = vMath.add({x:pos.x, y:pos.y}, vMath.multScalar(vMath.norm(impact), 100 + Math.round(Math.random() * 100)));
 
-    let obj = new MapObject(bloodPos, 0, getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId()));
+    let obj = new MapObject(bloodPos, Math.atan2(impact.y, impact.x), getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId()));
     map.addObject(obj);
     server.emit("create", obj.serialize());
 
