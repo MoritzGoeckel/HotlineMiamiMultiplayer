@@ -1,6 +1,6 @@
 module.exports = {
     serverTickrate:200, 
-    clientTickrate:2000,
+    clientTickrate:1000,
     clientFramerate:2000,
     clientToServerComRate:30,
     serverToClientComRate:30,

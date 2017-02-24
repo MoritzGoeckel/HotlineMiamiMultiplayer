@@ -6,7 +6,7 @@ module.exports = class ClientLogic {
     constructor(){
         this.lastUpdateMovement = new Date().getTime();
         this.lastFireTime = this.lastUpdateMovement;
-        this.fireRate = 1000 / 3;
+        this.fireRate = 1000 / 10;
     }
 
     initMouseInput(canvas){

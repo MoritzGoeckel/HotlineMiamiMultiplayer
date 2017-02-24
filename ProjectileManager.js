@@ -1,6 +1,7 @@
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
+var GameplayConfig = require('./config/Gameplay');
 
 module.exports = class{
     constructor(){
@@ -14,12 +15,20 @@ module.exports = class{
 
         let id = "p_" + this.lastId++;
 
-        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize().setZValue(-0.5); //Client side
         obj.movement = {startPos:position, startTimestamp:now, speed:speed, direction:direction};
         obj.bulletOwnerId = playerId;
 
         map.addObject(obj);
         this.projectiles[id] = true;
+
+        //Remove projectiles that did not hit after some time
+        setTimeout(function(){
+            if(theBase.projectiles[id] != undefined){
+                map.removeObject(id);
+                delete theBase.projectiles[id];
+            }
+        }, GameplayConfig.projectileDespawnTimeout);
     }
 
     update(map, onHitObject, onHitPlayer){

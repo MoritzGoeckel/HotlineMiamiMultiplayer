@@ -7,7 +7,7 @@ module.exports = class ClientLogic {
     constructor(){
         this.lastUpdateMovement = new Date().getTime();
         this.lastFireTime = this.lastUpdateMovement;
-        this.fireRate = 1000 / 3;
+        this.fireRate = 1000 / 10;
     }
 
     initMouseInput(canvas){
@@ -160,12 +160,14 @@ module.exports = class ClientLogic {
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
-    playerCollisionRadius:100
+    playerCollisionRadius:100,
+    bloodDespawnTimeout:5000,
+    projectileDespawnTimeout:5000
 };
 },{}],3:[function(require,module,exports){
 module.exports = {
     serverTickrate:200, 
-    clientTickrate:2000,
+    clientTickrate:1000,
     clientFramerate:2000,
     clientToServerComRate:30,
     serverToClientComRate:30,
@@ -552,6 +554,7 @@ module.exports = class MapObject{
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
+var GameplayConfig = require('./config/Gameplay');
 
 module.exports = class{
     constructor(){
@@ -565,12 +568,20 @@ module.exports = class{
 
         let id = "p_" + this.lastId++;
 
-        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize().setZValue(-0.5); //Client side
         obj.movement = {startPos:position, startTimestamp:now, speed:speed, direction:direction};
         obj.bulletOwnerId = playerId;
 
         map.addObject(obj);
         this.projectiles[id] = true;
+
+        //Remove projectiles that did not hit after some time
+        setTimeout(function(){
+            if(theBase.projectiles[id] != undefined){
+                map.removeObject(id);
+                delete theBase.projectiles[id];
+            }
+        }, GameplayConfig.projectileDespawnTimeout);
     }
 
     update(map, onHitObject, onHitPlayer){
@@ -608,7 +619,7 @@ module.exports = class{
         }
     }
 }
-},{"./Map.js":5,"./MapObject.js":6,"./VectorMath.js":9}],8:[function(require,module,exports){
+},{"./Map.js":5,"./MapObject.js":6,"./VectorMath.js":9,"./config/Gameplay":11}],8:[function(require,module,exports){
 var MapObject = require("./MapObject.js");
 
 module.exports = class Render{

@@ -37,6 +37,11 @@ map.addObject(new MapObject({x:200, y:650}, Math.PI * 0.5, getNewId(), "boxlarge
 
 map.addObject(new MapObject({x:200, y:800}, 0, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(144, 81));
 
+let spawnPoints = [];
+spawnPoints.push({x:500, y:100});
+spawnPoints.push({x:700, y:100});
+spawnPoints.push({x:400, y:100});
+spawnPoints.push({x:500, y:500});
 
 
 let projectileManager = new ProjectileManager();
@@ -67,7 +72,7 @@ server.on('connection', function(socket){
     player.addOwnedObject("playerMapObject", getNewId());
 
     let object = new MapObject(
-          {x:300 * Math.random(), y:300 * Math.random()}, 
+          spawnPoints[Math.round((spawnPoints.length - 1) * Math.random())], 
           Math.random() * Math.PI, 
           player.getOwnedObject("playerMapObject"), 
           "player",
@@ -148,6 +153,12 @@ setInterval(function(){
     let obj = new MapObject(bloodPos, Math.atan2(impact.y, impact.x), getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId())).setZValue(-1);
     map.addObject(obj);
     server.emit("create", obj.serialize());
+
+    //Remove blood after some time
+    setTimeout(function(){
+          server.emit('destroy_object', {id:obj.id});
+          map.removeObject(obj.id);
+    }, GameplayConfig.bloodDespawnTimeout)
 
     rm();
   });
