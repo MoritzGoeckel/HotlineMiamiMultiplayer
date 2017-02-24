@@ -137,7 +137,7 @@ module.exports = class ClientLogic {
                     else if(colliding == false && speedChange != undefined)
                     {
                         //Slow down
-                        var alternativeNewPos = vMath.add(me.playerObject.pos, vMath.multScalar(movement, speedChange));
+                        var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
                         me.playerObject.changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
                     }
@@ -164,9 +164,9 @@ module.exports = {
 };
 },{}],3:[function(require,module,exports){
 module.exports = {
-    serverTickrate:30, 
-    clientTickrate:300,
-    clientFramerate:300,
+    serverTickrate:200, 
+    clientTickrate:2000,
+    clientFramerate:2000,
     clientToServerComRate:30,
     serverToClientComRate:30,
     serverToClientFullUpdateRate:1,
@@ -419,6 +419,11 @@ module.exports = class MapObject{
         }
     }
 
+    setZValue(value){
+        this.render_z = value;
+        return this;
+    }
+
     makePlayer(playerId){
         this.playerId = playerId;
         return this;
@@ -509,6 +514,9 @@ module.exports = class MapObject{
         if(this.projectile != undefined)
             output.projectile = this.projectile;
 
+        if(this.render_z != undefined)
+            output.render_z = this.render_z;
+
         if(this.dataObject != undefined){
             output.dataObject = this.dataObject.serialize();
         }
@@ -552,12 +560,13 @@ module.exports = class{
     }
 
     addProjectile(map, speed, position, direction, texture, playerId){
+        let now = new Date().getTime();
         let theBase = this;
 
         let id = "p_" + this.lastId++;
 
         let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
-        obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
+        obj.movement = {startPos:position, startTimestamp:now, speed:speed, direction:direction};
         obj.bulletOwnerId = playerId;
 
         map.addObject(obj);
@@ -565,14 +574,16 @@ module.exports = class{
     }
 
     update(map, onHitObject, onHitPlayer){
-        //Todo: Make update interval independent
+        let now = new Date().getTime();
+
         for(let id in this.projectiles)
         {
             let theBase = this;
             let obj = map.getObject(id);
             if(obj != undefined)
             {
-                obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
+                //Todo: Sometimes missing because of too heigh speed
+                obj.changePosDir(vMath.add(obj.movement.startPos, vMath.multScalar({x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, (now - obj.movement.startTimestamp) * obj.movement.speed)), undefined);
 
                 let removeBullet = function(){
                     map.removeObject(id);
@@ -584,12 +595,12 @@ module.exports = class{
                     for(let a in collidingObjs){
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
                         {
-                            onHitObject(collidingObjs[a], obj.movement, removeBullet);
+                            onHitObject(collidingObjs[a], {x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, removeBullet);
                         }
 
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
                         {
-                            onHitPlayer(collidingObjs[a].playerId, obj.movement, removeBullet);
+                            onHitPlayer(collidingObjs[a].playerId, {x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, removeBullet);
                         }
                     }
                 }
@@ -614,7 +625,17 @@ module.exports = class Render{
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
                     base.sprites[value.id].anchor.x = .5;
                     base.sprites[value.id].anchor.y = .5;
+
+                    if(value.render_z != undefined)
+                        base.sprites[value.id].z = value.render_z;
+                    else
+                        base.sprites[value.id].z = 0;
+
                     base.stage.addChild(base.sprites[value.id]);
+
+                    //Sort z values
+                    function depthCompare(a, b) { if (a.z < b.z) return -1; if (a.z > b.z) return 1; return 0;}
+                    base.stage.children.sort(depthCompare);
                 }
 
                 base.sprites[value.id].rotation = value.dir;
@@ -817,7 +838,7 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    projectileManager.addProjectile(data.map, 10, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
+                    projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 

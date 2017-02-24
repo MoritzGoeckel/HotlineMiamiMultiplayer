@@ -50,6 +50,11 @@ module.exports = class MapObject{
         }
     }
 
+    setZValue(value){
+        this.render_z = value;
+        return this;
+    }
+
     makePlayer(playerId){
         this.playerId = playerId;
         return this;
@@ -139,6 +144,9 @@ module.exports = class MapObject{
 
         if(this.projectile != undefined)
             output.projectile = this.projectile;
+
+        if(this.render_z != undefined)
+            output.render_z = this.render_z;
 
         if(this.dataObject != undefined){
             output.dataObject = this.dataObject.serialize();

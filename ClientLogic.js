@@ -136,7 +136,7 @@ module.exports = class ClientLogic {
                     else if(colliding == false && speedChange != undefined)
                     {
                         //Slow down
-                        var alternativeNewPos = vMath.add(me.playerObject.pos, vMath.multScalar(movement, speedChange));
+                        var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
                         me.playerObject.changePosDir(alternativeNewPos, undefined);
                         changeMe("pos", alternativeNewPos);
                     }

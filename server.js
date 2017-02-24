@@ -106,9 +106,9 @@ server.on('connection', function(socket){
 
     socket.on("rise_event", function(msg){
       if(msg.mode == "fire"){
-        projectileManager.addProjectile(map, 10, msg.pos, msg.dir, "bullet", player.id);
+        projectileManager.addProjectile(map, 3, msg.pos, msg.dir, "bullet", player.id);
         
-        let output = {speed:10, pos:msg.pos, dir:msg.dir, texture:"bullet", playerId:player.id};
+        let output = {speed:3, pos:msg.pos, dir:msg.dir, texture:"bullet", playerId:player.id};
         socket.broadcast.emit("create_projectile", output);
       }
     });
@@ -145,10 +145,10 @@ setInterval(function(){
       
     let bloodPos = vMath.add({x:pos.x, y:pos.y}, vMath.multScalar(vMath.norm(impact), 100 + Math.round(Math.random() * 100)));
 
-    let obj = new MapObject(bloodPos, Math.atan2(impact.y, impact.x), getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId()));
+    let obj = new MapObject(bloodPos, Math.atan2(impact.y, impact.x), getNewId(), "blood" + Math.ceil(Math.random() * 3), new DataObject(-1, getNewId())).setZValue(-1);
     map.addObject(obj);
     server.emit("create", obj.serialize());
 
     rm();
   });
-}, 1000 / TechnicalConfig.clientTickrate); //Server tickrate
+}, 1000 / TechnicalConfig.serverTickrate); //Server tickrate

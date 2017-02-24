@@ -14,7 +14,17 @@ module.exports = class Render{
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
                     base.sprites[value.id].anchor.x = .5;
                     base.sprites[value.id].anchor.y = .5;
+
+                    if(value.render_z != undefined)
+                        base.sprites[value.id].z = value.render_z;
+                    else
+                        base.sprites[value.id].z = 0;
+
                     base.stage.addChild(base.sprites[value.id]);
+
+                    //Sort z values
+                    function depthCompare(a, b) { if (a.z < b.z) return -1; if (a.z > b.z) return 1; return 0;}
+                    base.stage.children.sort(depthCompare);
                 }
 
                 base.sprites[value.id].rotation = value.dir;

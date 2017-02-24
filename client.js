@@ -106,7 +106,7 @@ $(document).ready(function(){
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
                     socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
-                    projectileManager.addProjectile(data.map, 10, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
+                    projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 

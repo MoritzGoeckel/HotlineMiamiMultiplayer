@@ -9,12 +9,13 @@ module.exports = class{
     }
 
     addProjectile(map, speed, position, direction, texture, playerId){
+        let now = new Date().getTime();
         let theBase = this;
 
         let id = "p_" + this.lastId++;
 
         let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
-        obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
+        obj.movement = {startPos:position, startTimestamp:now, speed:speed, direction:direction};
         obj.bulletOwnerId = playerId;
 
         map.addObject(obj);
@@ -22,14 +23,16 @@ module.exports = class{
     }
 
     update(map, onHitObject, onHitPlayer){
-        //Todo: Make update interval independent
+        let now = new Date().getTime();
+
         for(let id in this.projectiles)
         {
             let theBase = this;
             let obj = map.getObject(id);
             if(obj != undefined)
             {
-                obj.changePosDir(vMath.add(obj.pos, obj.movement), undefined);
+                //Todo: Sometimes missing because of too heigh speed
+                obj.changePosDir(vMath.add(obj.movement.startPos, vMath.multScalar({x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, (now - obj.movement.startTimestamp) * obj.movement.speed)), undefined);
 
                 let removeBullet = function(){
                     map.removeObject(id);
@@ -41,12 +44,12 @@ module.exports = class{
                     for(let a in collidingObjs){
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].speedChange == undefined)
                         {
-                            onHitObject(collidingObjs[a], obj.movement, removeBullet);
+                            onHitObject(collidingObjs[a], {x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, removeBullet);
                         }
 
                         if(collidingObjs[a].collisionMode != undefined && collidingObjs[a].playerId != undefined && collidingObjs[a].playerId != obj.bulletOwnerId)
                         {
-                            onHitPlayer(collidingObjs[a].playerId, obj.movement, removeBullet);
+                            onHitPlayer(collidingObjs[a].playerId, {x:Math.cos(obj.movement.direction), y:Math.sin(obj.movement.direction)}, removeBullet);
                         }
                     }
                 }
