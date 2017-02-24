@@ -111,8 +111,6 @@ $(document).ready(function(){
             });
 
             projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
-        
-        //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server

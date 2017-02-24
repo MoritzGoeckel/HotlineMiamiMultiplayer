@@ -125,5 +125,8 @@ setInterval(function() {
 }, 1000 / TechnicalConfig.serverToClientComRate);
 
 setInterval(function(){
-  projectileManager.update(map, function(obj, rm){rm();}, function(playerId, rm){rm();});
+  projectileManager.update(map, function(obj, rm){rm();}, function(playerId, rm){
+    //Todo: react to player hit
+    rm();
+  });
 }, 1000 / TechnicalConfig.clientTickrate); //Server tickrate

@@ -86,7 +86,10 @@ module.exports = class Map{
     {
         let output = {deserializeFunction:"map", data:[]};
         for(var key in this.objects)
-            output.data.push(this.objects[key].serialize());
+        {
+            if(this.objects[key].dontSerialize != true)
+                output.data.push(this.objects[key].serialize());
+        }
 
         return output;
     }

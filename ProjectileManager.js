@@ -13,7 +13,7 @@ module.exports = class{
 
         let id = "p_" + this.lastId++;
 
-        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4); //Client side
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
         obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
         obj.bulletOwnerId = playerId;
 
@@ -22,6 +22,7 @@ module.exports = class{
     }
 
     update(map, onHitObject, onHitPlayer){
+        //Todo: Make update interval independent
         for(let id in this.projectiles)
         {
             let theBase = this;

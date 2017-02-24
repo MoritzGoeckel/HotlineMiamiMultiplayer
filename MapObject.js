@@ -55,6 +55,11 @@ module.exports = class MapObject{
         return this;
     }
 
+    makeDontSerialize(){
+        this.dontSerialize = true;
+        return this;
+    }
+
     makeSpeedChange(factor)
     {
         this.speedChange = factor;
@@ -141,6 +146,9 @@ module.exports = class MapObject{
 
         if(this.playerId != undefined)
             output.playerId = this.playerId;
+
+        if(this.dontSerialize != undefined && this.dontSerialize == true)
+            throw new Error("This object should not be serialized!");
 
         return output; 
     }

@@ -341,7 +341,10 @@ module.exports = class Map{
     {
         let output = {deserializeFunction:"map", data:[]};
         for(var key in this.objects)
-            output.data.push(this.objects[key].serialize());
+        {
+            if(this.objects[key].dontSerialize != true)
+                output.data.push(this.objects[key].serialize());
+        }
 
         return output;
     }
@@ -418,6 +421,11 @@ module.exports = class MapObject{
 
     makePlayer(playerId){
         this.playerId = playerId;
+        return this;
+    }
+
+    makeDontSerialize(){
+        this.dontSerialize = true;
         return this;
     }
 
@@ -508,6 +516,9 @@ module.exports = class MapObject{
         if(this.playerId != undefined)
             output.playerId = this.playerId;
 
+        if(this.dontSerialize != undefined && this.dontSerialize == true)
+            throw new Error("This object should not be serialized!");
+
         return output; 
     }
 
@@ -545,7 +556,7 @@ module.exports = class{
 
         let id = "p_" + this.lastId++;
 
-        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4); //Client side
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize(); //Client side
         obj.movement = {x:Math.cos(direction) * speed, y:Math.sin(direction) * speed};
         obj.bulletOwnerId = playerId;
 
@@ -554,6 +565,7 @@ module.exports = class{
     }
 
     update(map, onHitObject, onHitPlayer){
+        //Todo: Make update interval independent
         for(let id in this.projectiles)
         {
             let theBase = this;
@@ -810,8 +822,6 @@ $(document).ready(function(){
             });
 
             projectileManager.update(data.map, function(obj, rm){rm();}, function(playerId, rm){rm();});
-        
-        //logic.updateProjectiles(me, map, projectiles);
     }, 1000 / TechnicalConfig.clientTickrate);
 
     //Send Update to the Server
