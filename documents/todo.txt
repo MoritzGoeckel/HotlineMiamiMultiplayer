@@ -1,0 +1,7 @@
+Move viewport
+Reloading
+Ammo
+Pickup
+Health
+Gamemode
+Map

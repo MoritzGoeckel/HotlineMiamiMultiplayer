@@ -739,8 +739,7 @@ module.exports = class Render{
         //let colorFilter = new PIXI.filters.ColorMatrixFilter();
         //let colorFilter = new PIXI.Filter(null, "fragment", null);
         //colorFilter.matrix[0] = Math.random() * 10;
-        //this.stage.filters = [colorFilter];
-        
+                
         this.pixi = pixi;
 
         var base = this;
@@ -752,6 +751,7 @@ module.exports = class Render{
         loader.once('complete', function(e){
             base.resources = e.resources;
             console.log("Resources loaded");
+
             callback();
         });
         loader.load();
