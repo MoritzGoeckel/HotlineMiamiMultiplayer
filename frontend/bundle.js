@@ -734,6 +734,13 @@ module.exports = class Render{
     constructor(pixi, textures, callback)
     {
         this.stage = new PIXI.Container();
+        
+        //Todo: Cool Filters
+        //let colorFilter = new PIXI.filters.ColorMatrixFilter();
+        //let colorFilter = new PIXI.Filter(null, "fragment", null);
+        //colorFilter.matrix[0] = Math.random() * 10;
+        //this.stage.filters = [colorFilter];
+        
         this.pixi = pixi;
 
         var base = this;
@@ -816,6 +823,7 @@ function createNewIDFunction()
 var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
+
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
     

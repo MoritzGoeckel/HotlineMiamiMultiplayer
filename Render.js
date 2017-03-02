@@ -67,6 +67,13 @@ module.exports = class Render{
     constructor(pixi, textures, callback)
     {
         this.stage = new PIXI.Container();
+        
+        //Todo: Cool Filters
+        //let colorFilter = new PIXI.filters.ColorMatrixFilter();
+        //let colorFilter = new PIXI.Filter(null, "fragment", null);
+        //colorFilter.matrix[0] = Math.random() * 10;
+        //this.stage.filters = [colorFilter];
+        
         this.pixi = pixi;
 
         var base = this;

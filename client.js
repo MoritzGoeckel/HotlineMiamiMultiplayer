@@ -19,6 +19,7 @@ function createNewIDFunction()
 var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
+
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
     
