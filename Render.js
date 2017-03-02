@@ -49,6 +49,10 @@ module.exports = class Render{
         }
     }
 
+    addSprite(sprite){
+        this.stage.addChild(sprite);
+    }
+
     removeSprite(objectId)
     {
         let sprite = this.sprites[objectId];
@@ -56,7 +60,11 @@ module.exports = class Render{
         this.stage.removeChild(sprite)
     }
 
-    constructor(pixi, textures)
+    getTexture(name){
+        return this.resources[name].texture;
+    }
+
+    constructor(pixi, textures, callback)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
@@ -70,6 +78,7 @@ module.exports = class Render{
         loader.once('complete', function(e){
             base.resources = e.resources;
             console.log("Resources loaded");
+            callback();
         });
         loader.load();
 

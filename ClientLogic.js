@@ -33,11 +33,71 @@ module.exports = class ClientLogic {
         }
     }
 
+    getMousePos(){
+        return this.mouse.pos;
+    }
+
     initKeyboardInput(){
         this.keys = [];
         let theBase = this;
         window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
         window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+    }
+
+    tryChange(me, map, newPos){
+
+        var oldPos = me.playerObject.pos;
+
+        //Duplicated code
+        function changeMe(key, value)
+        {
+            if(key == "dir" || key == "pos"){ //Could also be other things
+                me.playerObject.dataObject.setAsOwner(me.id, key, value);
+            }
+        }
+
+        me.playerObject.changePosDir(newPos, undefined);
+
+        var collidingObjs = map.checkCollision(me.playerObject, 500);
+
+        if(collidingObjs === false)
+        {
+            changeMe("pos", newPos);
+        }
+        else
+        {
+            let colliding = false;
+            let speedChange = undefined;
+
+            for(let i in collidingObjs){
+                if(collidingObjs[i].speedChange == undefined)
+                {
+                    colliding = true;
+                    break;
+                }
+                else
+                    speedChange = collidingObjs[i].speedChange;
+            }
+            
+            if(colliding == false && speedChange == undefined)
+            {
+                //Okay, continue
+                changeMe("pos", newPos);
+            }
+            else if(colliding == false && speedChange != undefined)
+            {
+                //Slow down
+                var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
+                me.playerObject.changePosDir(alternativeNewPos, undefined);
+                changeMe("pos", alternativeNewPos);
+            }
+            else if(colliding)
+            {
+                //It is coliding, get back to old position
+                me.playerObject.changePosDir(oldPos, undefined);
+                //changeMe("pos", oldPos);    
+            }
+        }
     }
 
     updateMovement(me, map, riseEvent)
@@ -69,31 +129,25 @@ module.exports = class ClientLogic {
             courserToPlayer = vMath.norm(courserToPlayer);
             var movement = {x:0, y:0};
 
-            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
-            {
-                this.lastFireTime = now;
-                riseEvent("fire");
-            }
-
             //W
-            if(this.keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
+            if(this.keys["87"])
             {
-                movement = vMath.add(movement, courserToPlayer);
+                movement = vMath.add(movement, {x:0, y:-1});
             }
             //S
             if(this.keys["83"])
             {
-                movement = vMath.sub(movement, courserToPlayer);
+                movement = vMath.add(movement, {x:0, y:1});
             }
             //A
             if(this.keys["68"])
             {
-                movement = vMath.add(movement, vMath.ortho(courserToPlayer));
+                movement = vMath.add(movement, {x:1, y:0});
             }
             //D
             if(this.keys["65"])
             {
-                movement = vMath.sub(movement, vMath.ortho(courserToPlayer));
+                movement = vMath.add(movement, {x:-1, y:0});
             }
 
             if(movement.x != 0 || movement.y != 0)
@@ -101,52 +155,18 @@ module.exports = class ClientLogic {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
-                var oldPos = me.playerObject.pos;
-                var newPos = vMath.add(me.playerObject.pos, movement); //courserDistance ??? todo:
-
+                let movementX = {x:movement.x, y:0};
+                let movementY = {x:0, y:movement.y};
+                
                 //Check collision
-                me.playerObject.changePosDir(newPos, undefined);
+                this.tryChange(me, map, vMath.add(me.playerObject.pos, movementX));
+                this.tryChange(me, map, vMath.add(me.playerObject.pos, movementY));
+            }
 
-                var collidingObjs = map.checkCollision(me.playerObject, 500);
-
-                if(collidingObjs === false)
-                {
-                    changeMe("pos", newPos);
-                }
-                else
-                {
-                    let colliding = false;
-                    let speedChange = undefined;
-
-                    for(let i in collidingObjs){
-                        if(collidingObjs[i].speedChange == undefined)
-                        {
-                            colliding = true;
-                            break;
-                        }
-                        else
-                            speedChange = collidingObjs[i].speedChange;
-                    }
-                    
-                    if(colliding == false && speedChange == undefined)
-                    {
-                        //Okay, continue
-                        changeMe("pos", newPos);
-                    }
-                    else if(colliding == false && speedChange != undefined)
-                    {
-                        //Slow down
-                        var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
-                        me.playerObject.changePosDir(alternativeNewPos, undefined);
-                        changeMe("pos", alternativeNewPos);
-                    }
-                    else if(colliding)
-                    {
-                        //It is coliding, get back to old position
-                        me.playerObject.changePosDir(oldPos, undefined);
-                        //changeMe("pos", oldPos);    
-                    }
-                }
+            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            {
+                this.lastFireTime = now;
+                riseEvent("fire");
             }
         }
         

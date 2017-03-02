@@ -5,6 +5,7 @@ var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 var ProjectileManager = require("./ProjectileManager.js");
+var Cross = require("./Cross.js");
 //var io = require("socket.io");
 
 function createNewIDFunction()
@@ -26,7 +27,11 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big"]);        
+    let cross;
+    
+    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big", "cross-300", "cross-301", "cross-302", "cross-303"], function(){
+        cross = new Cross(["cross-301", "cross-302", "cross-303", "cross-302", "cross-301"], render);
+    });        
 
     let projectileManager = new ProjectileManager();
 
@@ -98,6 +103,7 @@ $(document).ready(function(){
     setInterval(function(){
         if(render != undefined && data.map != undefined && me != undefined)
             render.drawFrame(me, data.map);
+            cross.setPosition(logic.getMousePos());
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
@@ -109,7 +115,12 @@ $(document).ready(function(){
 
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
-                    socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    
+                    setTimeout(function(){
+                        socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    }, 0);
+
+                    //Dont know why, but here seems to be a bottleneck
                     projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });

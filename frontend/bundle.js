@@ -34,11 +34,71 @@ module.exports = class ClientLogic {
         }
     }
 
+    getMousePos(){
+        return this.mouse.pos;
+    }
+
     initKeyboardInput(){
         this.keys = [];
         let theBase = this;
         window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
         window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+    }
+
+    tryChange(me, map, newPos){
+
+        var oldPos = me.playerObject.pos;
+
+        //Duplicated code
+        function changeMe(key, value)
+        {
+            if(key == "dir" || key == "pos"){ //Could also be other things
+                me.playerObject.dataObject.setAsOwner(me.id, key, value);
+            }
+        }
+
+        me.playerObject.changePosDir(newPos, undefined);
+
+        var collidingObjs = map.checkCollision(me.playerObject, 500);
+
+        if(collidingObjs === false)
+        {
+            changeMe("pos", newPos);
+        }
+        else
+        {
+            let colliding = false;
+            let speedChange = undefined;
+
+            for(let i in collidingObjs){
+                if(collidingObjs[i].speedChange == undefined)
+                {
+                    colliding = true;
+                    break;
+                }
+                else
+                    speedChange = collidingObjs[i].speedChange;
+            }
+            
+            if(colliding == false && speedChange == undefined)
+            {
+                //Okay, continue
+                changeMe("pos", newPos);
+            }
+            else if(colliding == false && speedChange != undefined)
+            {
+                //Slow down
+                var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
+                me.playerObject.changePosDir(alternativeNewPos, undefined);
+                changeMe("pos", alternativeNewPos);
+            }
+            else if(colliding)
+            {
+                //It is coliding, get back to old position
+                me.playerObject.changePosDir(oldPos, undefined);
+                //changeMe("pos", oldPos);    
+            }
+        }
     }
 
     updateMovement(me, map, riseEvent)
@@ -70,31 +130,25 @@ module.exports = class ClientLogic {
             courserToPlayer = vMath.norm(courserToPlayer);
             var movement = {x:0, y:0};
 
-            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
-            {
-                this.lastFireTime = now;
-                riseEvent("fire");
-            }
-
             //W
-            if(this.keys["87"] && courserDistance > gameplayConfig.minMouseDistanceMoveForward)
+            if(this.keys["87"])
             {
-                movement = vMath.add(movement, courserToPlayer);
+                movement = vMath.add(movement, {x:0, y:-1});
             }
             //S
             if(this.keys["83"])
             {
-                movement = vMath.sub(movement, courserToPlayer);
+                movement = vMath.add(movement, {x:0, y:1});
             }
             //A
             if(this.keys["68"])
             {
-                movement = vMath.add(movement, vMath.ortho(courserToPlayer));
+                movement = vMath.add(movement, {x:1, y:0});
             }
             //D
             if(this.keys["65"])
             {
-                movement = vMath.sub(movement, vMath.ortho(courserToPlayer));
+                movement = vMath.add(movement, {x:-1, y:0});
             }
 
             if(movement.x != 0 || movement.y != 0)
@@ -102,52 +156,18 @@ module.exports = class ClientLogic {
                 movement = vMath.norm(movement);
                 movement = vMath.multScalar(movement, gameplayConfig.movementSpeed * delta);
 
-                var oldPos = me.playerObject.pos;
-                var newPos = vMath.add(me.playerObject.pos, movement); //courserDistance ??? todo:
-
+                let movementX = {x:movement.x, y:0};
+                let movementY = {x:0, y:movement.y};
+                
                 //Check collision
-                me.playerObject.changePosDir(newPos, undefined);
+                this.tryChange(me, map, vMath.add(me.playerObject.pos, movementX));
+                this.tryChange(me, map, vMath.add(me.playerObject.pos, movementY));
+            }
 
-                var collidingObjs = map.checkCollision(me.playerObject, 500);
-
-                if(collidingObjs === false)
-                {
-                    changeMe("pos", newPos);
-                }
-                else
-                {
-                    let colliding = false;
-                    let speedChange = undefined;
-
-                    for(let i in collidingObjs){
-                        if(collidingObjs[i].speedChange == undefined)
-                        {
-                            colliding = true;
-                            break;
-                        }
-                        else
-                            speedChange = collidingObjs[i].speedChange;
-                    }
-                    
-                    if(colliding == false && speedChange == undefined)
-                    {
-                        //Okay, continue
-                        changeMe("pos", newPos);
-                    }
-                    else if(colliding == false && speedChange != undefined)
-                    {
-                        //Slow down
-                        var alternativeNewPos = vMath.add(oldPos, vMath.multScalar(movement, speedChange));
-                        me.playerObject.changePosDir(alternativeNewPos, undefined);
-                        changeMe("pos", alternativeNewPos);
-                    }
-                    else if(colliding)
-                    {
-                        //It is coliding, get back to old position
-                        me.playerObject.changePosDir(oldPos, undefined);
-                        //changeMe("pos", oldPos);    
-                    }
-                }
+            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            {
+                this.lastFireTime = now;
+                riseEvent("fire");
             }
         }
         
@@ -156,7 +176,7 @@ module.exports = class ClientLogic {
         //Todo game logic / prediction
     }
 }
-},{"./VectorMath.js":9,"./config/Gameplay.js":11}],2:[function(require,module,exports){
+},{"./VectorMath.js":10,"./config/Gameplay.js":12}],2:[function(require,module,exports){
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
@@ -167,8 +187,8 @@ module.exports = {
 },{}],3:[function(require,module,exports){
 module.exports = {
     serverTickrate:200, 
-    clientTickrate:1000,
-    clientFramerate:2000,
+    clientTickrate:300,
+    clientFramerate:300,
     clientToServerComRate:30,
     serverToClientComRate:30,
     serverToClientFullUpdateRate:1,
@@ -176,6 +196,31 @@ module.exports = {
     socketPort:64003
 };
 },{}],4:[function(require,module,exports){
+module.exports = class{
+    constructor(textureNames, render){
+
+        let textures = [];
+        for(let i = 0; i < textureNames.length; i++){
+            textures.push(render.getTexture(textureNames[i]));
+        }
+
+        this.sprite = new PIXI.extras.AnimatedSprite(textures);
+        this.sprite.loop = true;
+        this.sprite.animationSpeed = 0.1;
+        this.sprite.gotoAndPlay(0);
+        this.sprite.anchor.x = .5;
+        this.sprite.anchor.y = .5;
+
+        this.sprite.z = 10;
+
+        render.addSprite(this.sprite);
+    }
+
+    setPosition(pos){
+        this.sprite.position = pos;
+    }
+}
+},{}],5:[function(require,module,exports){
 module.exports = class{
     constructor(owner, id)
     {
@@ -254,7 +299,7 @@ module.exports = class{
         return this;
     }
 }
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 var MapObject = require("./MapObject.js");
 
@@ -368,7 +413,7 @@ module.exports = class Map{
         return deserializer;
     }
 }
-},{"./MapObject.js":6,"./VectorMath.js":9}],6:[function(require,module,exports){
+},{"./MapObject.js":7,"./VectorMath.js":10}],7:[function(require,module,exports){
 var SAT = require('sat');
 var vMath = require("./VectorMath.js");
 var DataObject = require("./DataObject.js");
@@ -550,7 +595,7 @@ module.exports = class MapObject{
         return this;
     }
 };
-},{"./DataObject.js":4,"./VectorMath.js":9,"sat":12}],7:[function(require,module,exports){
+},{"./DataObject.js":5,"./VectorMath.js":10,"sat":13}],8:[function(require,module,exports){
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
@@ -619,7 +664,7 @@ module.exports = class{
         }
     }
 }
-},{"./Map.js":5,"./MapObject.js":6,"./VectorMath.js":9,"./config/Gameplay":11}],8:[function(require,module,exports){
+},{"./Map.js":6,"./MapObject.js":7,"./VectorMath.js":10,"./config/Gameplay":12}],9:[function(require,module,exports){
 var MapObject = require("./MapObject.js");
 
 module.exports = class Render{
@@ -671,6 +716,10 @@ module.exports = class Render{
         }
     }
 
+    addSprite(sprite){
+        this.stage.addChild(sprite);
+    }
+
     removeSprite(objectId)
     {
         let sprite = this.sprites[objectId];
@@ -678,7 +727,11 @@ module.exports = class Render{
         this.stage.removeChild(sprite)
     }
 
-    constructor(pixi, textures)
+    getTexture(name){
+        return this.resources[name].texture;
+    }
+
+    constructor(pixi, textures, callback)
     {
         this.stage = new PIXI.Container();
         this.pixi = pixi;
@@ -692,6 +745,7 @@ module.exports = class Render{
         loader.once('complete', function(e){
             base.resources = e.resources;
             console.log("Resources loaded");
+            callback();
         });
         loader.load();
 
@@ -699,7 +753,7 @@ module.exports = class Render{
         this.sprites = {};
     }
 }
-},{"./MapObject.js":6}],9:[function(require,module,exports){
+},{"./MapObject.js":7}],10:[function(require,module,exports){
 module.exports = {
     add : function(vec1, vec2)
     {
@@ -740,7 +794,7 @@ module.exports = {
         return {x:-vec.y, y:vec.x};
     }
 }
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var ClientLogic = require("./ClientLogic.js");
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
@@ -748,6 +802,7 @@ var Render = require("./Render.js");
 var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 var ProjectileManager = require("./ProjectileManager.js");
+var Cross = require("./Cross.js");
 //var io = require("socket.io");
 
 function createNewIDFunction()
@@ -769,7 +824,11 @@ $(document).ready(function(){
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big"]);        
+    let cross;
+    
+    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big", "cross-300", "cross-301", "cross-302", "cross-303"], function(){
+        cross = new Cross(["cross-301", "cross-302", "cross-303", "cross-302", "cross-301"], render);
+    });        
 
     let projectileManager = new ProjectileManager();
 
@@ -841,6 +900,7 @@ $(document).ready(function(){
     setInterval(function(){
         if(render != undefined && data.map != undefined && me != undefined)
             render.drawFrame(me, data.map);
+            cross.setPosition(logic.getMousePos());
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
@@ -852,7 +912,12 @@ $(document).ready(function(){
 
             logic.updateMovement(me, data.map, function(event){
                 if(event == "fire"){
-                    socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    
+                    setTimeout(function(){
+                        socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
+                    }, 0);
+
+                    //Dont know why, but here seems to be a bottleneck
                     projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
@@ -901,9 +966,9 @@ $(document).ready(function(){
     }
 
 */
-},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Map.js":5,"./MapObject.js":6,"./ProjectileManager.js":7,"./Render.js":8}],11:[function(require,module,exports){
+},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Cross.js":4,"./Map.js":6,"./MapObject.js":7,"./ProjectileManager.js":8,"./Render.js":9}],12:[function(require,module,exports){
 arguments[4][2][0].apply(exports,arguments)
-},{"dup":2}],12:[function(require,module,exports){
+},{"dup":2}],13:[function(require,module,exports){
 // Version 0.6.0 - Copyright 2012 - 2016 -  Jim Riecken <jimr@jimr.ca>
 //
 // Released under the MIT License - https://github.com/jriecken/sat-js
@@ -1893,4 +1958,4 @@ arguments[4][2][0].apply(exports,arguments)
   return SAT;
 }));
 
-},{}]},{},[10]);
+},{}]},{},[11]);
