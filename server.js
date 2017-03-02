@@ -29,6 +29,18 @@ var map = new Map();
 //map.addObject(new MapObject({x:200, y:200}, 0.3 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30));
 //map.addObject(new MapObject({x:300, y:300}, 0.5 * Math.PI, getNewId(), "player_max", new DataObject(-1, getNewId())).makeCollidableCircle(30).makeSpeedChange(0.2));
 
+//floor
+for(let x = 0; x < 10; x++)
+  for(let y = 0; y < 10; y++)
+    map.addObject(new MapObject({x:x * 60 + 60, y:y * 60 + 60}, 0, getNewId(), "floor_tile_quarter_big", new DataObject(-1, getNewId())).setZValue(-3));
+
+for(let x = 0; x < 10; x++)
+    map.addObject(new MapObject({x:x * 60 + 60, y:30}, 0, getNewId(), "wall_big", new DataObject(-1, getNewId())).setZValue(-2.5));
+
+map.addObject(new MapObject({x:30, y:30}, 0, getNewId(), "wall_corner_big", new DataObject(-1, getNewId())).setZValue(-2));
+map.addObject(new MapObject({x:10 * 60 + 20, y:30}, 0, getNewId(), "wall_corner_big", new DataObject(-1, getNewId())).setZValue(-2));
+
+
 map.addObject(new MapObject({x:200, y:100}, 0, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(144, 81));
 map.addObject(new MapObject({x:200, y:350}, Math.PI * 0.5, getNewId(), "boxlarge", new DataObject(-1, getNewId())).makeCollidableBox(81, 144));
 
@@ -78,7 +90,7 @@ server.on('connection', function(socket){
           "player",
           new DataObject(player.id, getNewId())
         )
-      .makeCollidableCircle(40)
+      .makeCollidableCircle(60)
       .makeSpeedChange(0.2)
       .makePlayer(player.id);
 
@@ -100,12 +112,22 @@ server.on('connection', function(socket){
     //Recieve update from player
       socket.on('update', function(msg){
         for(var objectId in msg){
-          map.getObject(objectId).dataObject.applyUpdateMessage(msg[objectId]);
-          if(updates[objectId] == undefined)
-            updates[objectId] = {};
-          
-          for(let key in msg[objectId])
-            updates[objectId][key] = true;
+          let obj = map.getObject(objectId);
+
+          if(obj == null || obj == undefined)
+          {
+            socket.emit("customError", {msg:"Object Id for update does not exist", action:"reconnect"});
+            break;
+          }
+          else
+          {
+            obj.dataObject.applyUpdateMessage(msg[objectId]);
+            if(updates[objectId] == undefined)
+              updates[objectId] = {};
+            
+            for(let key in msg[objectId])
+              updates[objectId][key] = true;
+          }
         }
     });
 

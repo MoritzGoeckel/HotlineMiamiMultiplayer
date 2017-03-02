@@ -22,11 +22,11 @@ $(document).ready(function(){
     var me;
     
     //The canvas
-    var pixi = new PIXI.autoDetectRenderer(window.innerWidth - 10, window.innerHeight - 10);
+    var pixi = new PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
 
-    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4"]);        
+    let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big"]);        
 
     let projectileManager = new ProjectileManager();
 
@@ -84,6 +84,10 @@ $(document).ready(function(){
 
     socket.on('destroy_object', function(msg){
         data.map.removeObject(msg.id);
+    });
+
+    socket.on('customError', function(msg){
+        console.log(msg);
     });
 
     var logic = new ClientLogic();

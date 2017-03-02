@@ -44,7 +44,7 @@ module.exports = class Render{
                     }
                 }
             }
-
+            
             this.pixi.render(this.stage);
         }
     }
