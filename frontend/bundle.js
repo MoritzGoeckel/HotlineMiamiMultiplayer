@@ -1,5 +1,37 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
+
+module.exports = class{
+    constructor(pos){
+        this.pos = pos;
+    }
+
+    update(mousePos, playerPos, cross){
+        /*let player_cross = vMath.sub(cross.getPosition(), playerPos);
+        let len = vMath.len(player_cross) / 300;
+
+        if(len > 1)
+            len = 1;
+        
+        console.log(len);
+
+        this.pos = vMath.add(playerPos, vMath.multScalar(vMath.norm(player_cross), len * 300));*/
+
+        //Todo: Camera
+
+        this.pos = playerPos;
+    }
+
+    setPosition(pos){
+        this.pos = pos;
+    }
+
+    getPosition(){
+        return this.pos;
+    }
+}
+},{"./VectorMath.js":12}],2:[function(require,module,exports){
+var vMath = require("./VectorMath.js");
 var gameplayConfig = require("./config/Gameplay.js");
 
 module.exports = class ClientLogic {
@@ -7,42 +39,7 @@ module.exports = class ClientLogic {
     constructor(){
         this.lastUpdateMovement = new Date().getTime();
         this.lastFireTime = this.lastUpdateMovement;
-        this.fireRate = 1000 / 10;
-    }
-
-    initMouseInput(canvas){
-        this.mouse = {};
-        this.mouse.buttonsArray = [false, false, false, false, false, false, false, false, false];
-        let theBase = this;
-        document.onmousedown = function(e) {
-            theBase.mouse.buttonsArray[e.button] = true;
-        };
-        document.onmouseup = function(e) {
-            theBase.mouse.buttonsArray[e.button] = false;
-        };
-
-        canvas.addEventListener('mousemove', function(evt) {
-            theBase.mouse.pos = getMousePos(canvas, evt);
-        }, false);
-
-        function getMousePos(canvas, evt) {
-            var rect = canvas.getBoundingClientRect();
-            return {
-                x: evt.clientX - rect.left,
-                y: evt.clientY - rect.top
-            };
-        }
-    }
-
-    getMousePos(){
-        return this.mouse.pos;
-    }
-
-    initKeyboardInput(){
-        this.keys = [];
-        let theBase = this;
-        window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
-        window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+        this.fireRate = 1000 / 7;
     }
 
     tryChange(me, map, newPos){
@@ -101,7 +98,7 @@ module.exports = class ClientLogic {
         }
     }
 
-    updateMovement(me, map, riseEvent)
+    updateMovement(me, map, input, cross, riseEvent)
     {        
         let now = new Date().getTime();
         var delta = now - this.lastUpdateMovement;
@@ -117,9 +114,9 @@ module.exports = class ClientLogic {
             }
         }
 
-        if(this.mouse != undefined && this.mouse.pos != undefined)
+        if(cross.getPosition() != undefined)
         {
-            var courserToPlayer = vMath.sub(this.mouse.pos, me.playerObject.pos);
+            var courserToPlayer = vMath.sub(cross.getPosition(), me.playerObject.pos);
             var courserDistance = vMath.len(courserToPlayer);
             
             var newDir = Math.atan2(courserToPlayer.y, courserToPlayer.x);
@@ -131,22 +128,22 @@ module.exports = class ClientLogic {
             var movement = {x:0, y:0};
 
             //W
-            if(this.keys["87"])
+            if(input.getKeyboard()["87"])
             {
                 movement = vMath.add(movement, {x:0, y:-1});
             }
             //S
-            if(this.keys["83"])
+            if(input.getKeyboard()["83"])
             {
                 movement = vMath.add(movement, {x:0, y:1});
             }
             //A
-            if(this.keys["68"])
+            if(input.getKeyboard()["68"])
             {
                 movement = vMath.add(movement, {x:1, y:0});
             }
             //D
-            if(this.keys["65"])
+            if(input.getKeyboard()["65"])
             {
                 movement = vMath.add(movement, {x:-1, y:0});
             }
@@ -164,7 +161,7 @@ module.exports = class ClientLogic {
                 this.tryChange(me, map, vMath.add(me.playerObject.pos, movementY));
             }
 
-            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            if(input.getMouseButtons()[0] && now - this.lastFireTime > this.fireRate)
             {
                 this.lastFireTime = now;
                 riseEvent("fire");
@@ -176,7 +173,7 @@ module.exports = class ClientLogic {
         //Todo game logic / prediction
     }
 }
-},{"./VectorMath.js":10,"./config/Gameplay.js":12}],2:[function(require,module,exports){
+},{"./VectorMath.js":12,"./config/Gameplay.js":14}],3:[function(require,module,exports){
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
@@ -184,7 +181,7 @@ module.exports = {
     bloodDespawnTimeout:5000,
     projectileDespawnTimeout:5000
 };
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 module.exports = {
     serverTickrate:200, 
     clientTickrate:300,
@@ -195,7 +192,7 @@ module.exports = {
     httpPort:63884,
     socketPort:64003
 };
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = class{
     constructor(textureNames, render){
 
@@ -219,8 +216,12 @@ module.exports = class{
     setPosition(pos){
         this.sprite.position = pos;
     }
+
+    getPosition(){
+        return this.sprite.position;
+    }
 }
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = class{
     constructor(owner, id)
     {
@@ -299,7 +300,85 @@ module.exports = class{
         return this;
     }
 }
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+module.exports = class{
+
+    constructor(element){
+
+        let theBase = this;
+
+        let moveCallback = function(e){
+            var movementX = e.movementX ||
+                e.mozMovementX          ||
+                e.webkitMovementX       ||
+                0,
+            movementY = e.movementY ||
+                e.mozMovementY      ||
+                e.webkitMovementY   ||
+                0;
+
+            theBase.position.x += movementX;
+            theBase.position.y += movementY;
+        }
+
+        let changeCallback = function(e){
+            console.log(e);
+
+            if (document.pointerLockElement === element ||
+                document.mozPointerLockElement === element ||
+                document.webkitPointerLockElement === element) {
+                // Pointer was just locked
+                // Enable the mousemove listener
+                document.addEventListener("mousemove", moveCallback, false);
+            } else {
+                // Pointer was just unlocked
+                // Disable the mousemove listener
+                document.removeEventListener("mousemove", moveCallback, false);
+                this.unlockHook(this.element);
+            }
+        }
+
+        document.addEventListener('pointerlockchange', changeCallback, false);
+        document.addEventListener('mozpointerlockchange', changeCallback, false);
+        document.addEventListener('webkitpointerlockchange', changeCallback, false);
+
+        element.requestPointerLock = element.requestPointerLock ||
+			     element.mozRequestPointerLock ||
+			     element.webkitRequestPointerLock;
+
+        element.onclick = function(){
+            element.requestPointerLock();
+            console.log("Requested");
+        };
+
+        this.position = {x:0, y:0};
+
+        this.buttonsArray = [false, false, false, false, false, false, false, false, false];
+        document.onmousedown = function(e) {
+            theBase.buttonsArray[e.button] = true;
+        };
+        document.onmouseup = function(e) {
+            theBase.buttonsArray[e.button] = false;
+        };
+
+        this.keys = [];
+        window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
+        window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+    }
+
+    getMousePosition(){
+        return this.position;
+    }
+
+    getMouseButtons(){
+        return this.buttonsArray;
+    }
+
+    getKeyboard(){
+        return this.keys;
+    }
+}
+},{}],8:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 var MapObject = require("./MapObject.js");
 
@@ -331,7 +410,7 @@ module.exports = class Map{
         else
             console.error("Error: obj already in map!");
 
-        if(obj.collisionMode != undefined)
+        if(obj.collisionMode != undefined && obj.dontEnlistAsCollidable != true)
             this.collidableIds[obj.id] = true;
     }
 
@@ -413,7 +492,7 @@ module.exports = class Map{
         return deserializer;
     }
 }
-},{"./MapObject.js":7,"./VectorMath.js":10}],7:[function(require,module,exports){
+},{"./MapObject.js":9,"./VectorMath.js":12}],9:[function(require,module,exports){
 var SAT = require('sat');
 var vMath = require("./VectorMath.js");
 var DataObject = require("./DataObject.js");
@@ -491,6 +570,12 @@ module.exports = class MapObject{
     {
         this.collisionMode = "circle";
         this.radius = radius;
+        return this;
+    }
+
+    makeDontEnlistCollidable()
+    {
+        this.dontEnlistAsCollidable = true;
         return this;
     }
 
@@ -595,7 +680,7 @@ module.exports = class MapObject{
         return this;
     }
 };
-},{"./DataObject.js":5,"./VectorMath.js":10,"sat":13}],8:[function(require,module,exports){
+},{"./DataObject.js":6,"./VectorMath.js":12,"sat":15}],10:[function(require,module,exports){
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
@@ -613,7 +698,7 @@ module.exports = class{
 
         let id = "p_" + this.lastId++;
 
-        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontSerialize().setZValue(-0.5); //Client side
+        let obj = new MapObject(position, direction, id, texture, undefined).makeCollidableCircle(4).makeDontEnlistCollidable().makeDontSerialize().setZValue(-0.5); //Client side
         obj.movement = {startPos:position, startTimestamp:now, speed:speed, direction:direction};
         obj.bulletOwnerId = playerId;
 
@@ -664,11 +749,13 @@ module.exports = class{
         }
     }
 }
-},{"./Map.js":6,"./MapObject.js":7,"./VectorMath.js":10,"./config/Gameplay":12}],9:[function(require,module,exports){
+},{"./Map.js":8,"./MapObject.js":9,"./VectorMath.js":12,"./config/Gameplay":14}],11:[function(require,module,exports){
 var MapObject = require("./MapObject.js");
+var vMath = require("./VectorMath.js");
+
 
 module.exports = class Render{
-    drawFrame(me, map)
+    drawFrame(me, map, camera)
     {
         if(this.resources != undefined)
         {
@@ -712,7 +799,10 @@ module.exports = class Render{
                 }
             }
             
-            this.pixi.render(this.stage);
+            //Camera
+            this.stage.position = vMath.add(vMath.multScalar(camera.getPosition(), -1), {x:window.innerWidth / 2, y:window.innerHeight / 2});
+
+            this.pixi.render(this.superStage);
         }
     }
 
@@ -733,8 +823,11 @@ module.exports = class Render{
 
     constructor(pixi, textures, callback)
     {
-        this.stage = new PIXI.Container();
-        
+        this.superStage = new PIXI.DisplayObjectContainer();
+        this.stage = new PIXI.DisplayObjectContainer();
+
+        this.superStage.addChild(this.stage);
+
         //Todo: Cool Filters
         //let colorFilter = new PIXI.filters.ColorMatrixFilter();
         //let colorFilter = new PIXI.Filter(null, "fragment", null);
@@ -760,7 +853,7 @@ module.exports = class Render{
         this.sprites = {};
     }
 }
-},{"./MapObject.js":7}],10:[function(require,module,exports){
+},{"./MapObject.js":9,"./VectorMath.js":12}],12:[function(require,module,exports){
 module.exports = {
     add : function(vec1, vec2)
     {
@@ -801,7 +894,7 @@ module.exports = {
         return {x:-vec.y, y:vec.x};
     }
 }
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var ClientLogic = require("./ClientLogic.js");
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
@@ -810,6 +903,10 @@ var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 var ProjectileManager = require("./ProjectileManager.js");
 var Cross = require("./Cross.js");
+var Camera = require("./Camera.js");
+var vMath = require("./VectorMath.js");
+var Input = require("./Input.js");
+
 //var io = require("socket.io");
 
 function createNewIDFunction()
@@ -831,9 +928,11 @@ $(document).ready(function(){
     var pixi = new PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
+    let input = new Input(canvas);
 
     let cross;
-    
+    let camera = new Camera({x:0, y:0});
+
     let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big", "cross-300", "cross-301", "cross-302", "cross-303"], function(){
         cross = new Cross(["cross-301", "cross-302", "cross-303", "cross-302", "cross-301"], render);
     });        
@@ -846,9 +945,9 @@ $(document).ready(function(){
     let data = {};
     data.map = new Map();
 
-    socket.on('set', function (input) {
-        let id = input.id;
-        let obj = input.obj;
+    socket.on('set', function (msg) {
+        let id = msg.id;
+        let obj = msg.obj;
 
         data[id] = deserializers[obj.deserializeFunction](obj.data);
     });
@@ -901,14 +1000,12 @@ $(document).ready(function(){
     });
 
     var logic = new ClientLogic();
-    logic.initMouseInput(canvas);
-    logic.initKeyboardInput();
 
     //Render loop
     setInterval(function(){
         if(render != undefined && data.map != undefined && me != undefined)
-            render.drawFrame(me, data.map);
-            cross.setPosition(logic.getMousePos());
+            render.drawFrame(me, data.map, camera);
+            cross.setPosition(vMath.add(input.getMousePosition(), camera.getPosition()));
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
@@ -918,7 +1015,9 @@ $(document).ready(function(){
             if(me.playerObject == undefined)
                 me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
 
-            logic.updateMovement(me, data.map, function(event){
+            camera.update(input.getMousePosition(), me.playerObject.pos, cross);
+
+            logic.updateMovement(me, data.map, input, cross, function(event){
                 if(event == "fire"){
                     
                     setTimeout(function(){
@@ -926,7 +1025,7 @@ $(document).ready(function(){
                     }, 0);
 
                     //Dont know why, but here seems to be a bottleneck
-                    projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
+                    projectileManager.addProjectile(data.map, 2.5, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 
@@ -974,9 +1073,9 @@ $(document).ready(function(){
     }
 
 */
-},{"./ClientLogic.js":1,"./Config/Gameplay.js":2,"./Config/Technical.js":3,"./Cross.js":4,"./Map.js":6,"./MapObject.js":7,"./ProjectileManager.js":8,"./Render.js":9}],12:[function(require,module,exports){
-arguments[4][2][0].apply(exports,arguments)
-},{"dup":2}],13:[function(require,module,exports){
+},{"./Camera.js":1,"./ClientLogic.js":2,"./Config/Gameplay.js":3,"./Config/Technical.js":4,"./Cross.js":5,"./Input.js":7,"./Map.js":8,"./MapObject.js":9,"./ProjectileManager.js":10,"./Render.js":11,"./VectorMath.js":12}],14:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"dup":3}],15:[function(require,module,exports){
 // Version 0.6.0 - Copyright 2012 - 2016 -  Jim Riecken <jimr@jimr.ca>
 //
 // Released under the MIT License - https://github.com/jriecken/sat-js
@@ -1966,4 +2065,4 @@ arguments[4][2][0].apply(exports,arguments)
   return SAT;
 }));
 
-},{}]},{},[11]);
+},{}]},{},[13]);

@@ -6,6 +6,10 @@ var TechnicalConfig = require("./Config/Technical.js");
 var GameplayConfig = require("./Config/Gameplay.js");
 var ProjectileManager = require("./ProjectileManager.js");
 var Cross = require("./Cross.js");
+var Camera = require("./Camera.js");
+var vMath = require("./VectorMath.js");
+var Input = require("./Input.js");
+
 //var io = require("socket.io");
 
 function createNewIDFunction()
@@ -27,9 +31,11 @@ $(document).ready(function(){
     var pixi = new PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight);
     var canvas = pixi.view;
     document.getElementById("content").appendChild(canvas);
+    let input = new Input(canvas);
 
     let cross;
-    
+    let camera = new Camera({x:0, y:0});
+
     let render = new Render(pixi, ["player", "player_max", "healthpickup", "boxsmall", "boxmedium", "boxlarge", "ammopickup", "bullet", "blood1", "blood2", "blood3", "blood4", "floor_tile", "floor_tile_big", "floor_tile_quarter", "floor_tile_quarter_big", "wall", "wall_corner", "wall_big", "wall_corner_big", "cross-300", "cross-301", "cross-302", "cross-303"], function(){
         cross = new Cross(["cross-301", "cross-302", "cross-303", "cross-302", "cross-301"], render);
     });        
@@ -42,9 +48,9 @@ $(document).ready(function(){
     let data = {};
     data.map = new Map();
 
-    socket.on('set', function (input) {
-        let id = input.id;
-        let obj = input.obj;
+    socket.on('set', function (msg) {
+        let id = msg.id;
+        let obj = msg.obj;
 
         data[id] = deserializers[obj.deserializeFunction](obj.data);
     });
@@ -97,14 +103,12 @@ $(document).ready(function(){
     });
 
     var logic = new ClientLogic();
-    logic.initMouseInput(canvas);
-    logic.initKeyboardInput();
 
     //Render loop
     setInterval(function(){
         if(render != undefined && data.map != undefined && me != undefined)
-            render.drawFrame(me, data.map);
-            cross.setPosition(logic.getMousePos());
+            render.drawFrame(me, data.map, camera);
+            cross.setPosition(vMath.add(input.getMousePosition(), camera.getPosition()));
     }, 1000 / TechnicalConfig.clientFramerate);
 
     //Logic loop
@@ -114,7 +118,9 @@ $(document).ready(function(){
             if(me.playerObject == undefined)
                 me.playerObject = data.map.getObject(me.owned["playerMapObject"]);
 
-            logic.updateMovement(me, data.map, function(event){
+            camera.update(input.getMousePosition(), me.playerObject.pos, cross);
+
+            logic.updateMovement(me, data.map, input, cross, function(event){
                 if(event == "fire"){
                     
                     setTimeout(function(){
@@ -122,7 +128,7 @@ $(document).ready(function(){
                     }, 0);
 
                     //Dont know why, but here seems to be a bottleneck
-                    projectileManager.addProjectile(data.map, 3, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
+                    projectileManager.addProjectile(data.map, 2.5, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
 

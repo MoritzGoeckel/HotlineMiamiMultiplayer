@@ -1,7 +1,9 @@
 var MapObject = require("./MapObject.js");
+var vMath = require("./VectorMath.js");
+
 
 module.exports = class Render{
-    drawFrame(me, map)
+    drawFrame(me, map, camera)
     {
         if(this.resources != undefined)
         {
@@ -45,7 +47,10 @@ module.exports = class Render{
                 }
             }
             
-            this.pixi.render(this.stage);
+            //Camera
+            this.stage.position = vMath.add(vMath.multScalar(camera.getPosition(), -1), {x:window.innerWidth / 2, y:window.innerHeight / 2});
+
+            this.pixi.render(this.superStage);
         }
     }
 
@@ -66,8 +71,11 @@ module.exports = class Render{
 
     constructor(pixi, textures, callback)
     {
-        this.stage = new PIXI.Container();
-        
+        this.superStage = new PIXI.DisplayObjectContainer();
+        this.stage = new PIXI.DisplayObjectContainer();
+
+        this.superStage.addChild(this.stage);
+
         //Todo: Cool Filters
         //let colorFilter = new PIXI.filters.ColorMatrixFilter();
         //let colorFilter = new PIXI.Filter(null, "fragment", null);

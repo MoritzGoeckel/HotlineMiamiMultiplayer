@@ -6,42 +6,7 @@ module.exports = class ClientLogic {
     constructor(){
         this.lastUpdateMovement = new Date().getTime();
         this.lastFireTime = this.lastUpdateMovement;
-        this.fireRate = 1000 / 10;
-    }
-
-    initMouseInput(canvas){
-        this.mouse = {};
-        this.mouse.buttonsArray = [false, false, false, false, false, false, false, false, false];
-        let theBase = this;
-        document.onmousedown = function(e) {
-            theBase.mouse.buttonsArray[e.button] = true;
-        };
-        document.onmouseup = function(e) {
-            theBase.mouse.buttonsArray[e.button] = false;
-        };
-
-        canvas.addEventListener('mousemove', function(evt) {
-            theBase.mouse.pos = getMousePos(canvas, evt);
-        }, false);
-
-        function getMousePos(canvas, evt) {
-            var rect = canvas.getBoundingClientRect();
-            return {
-                x: evt.clientX - rect.left,
-                y: evt.clientY - rect.top
-            };
-        }
-    }
-
-    getMousePos(){
-        return this.mouse.pos;
-    }
-
-    initKeyboardInput(){
-        this.keys = [];
-        let theBase = this;
-        window.onkeyup = function(e) {theBase.keys[e.keyCode]=false;}
-        window.onkeydown = function(e) {theBase.keys[e.keyCode]=true;}
+        this.fireRate = 1000 / 7;
     }
 
     tryChange(me, map, newPos){
@@ -100,7 +65,7 @@ module.exports = class ClientLogic {
         }
     }
 
-    updateMovement(me, map, riseEvent)
+    updateMovement(me, map, input, cross, riseEvent)
     {        
         let now = new Date().getTime();
         var delta = now - this.lastUpdateMovement;
@@ -116,9 +81,9 @@ module.exports = class ClientLogic {
             }
         }
 
-        if(this.mouse != undefined && this.mouse.pos != undefined)
+        if(cross.getPosition() != undefined)
         {
-            var courserToPlayer = vMath.sub(this.mouse.pos, me.playerObject.pos);
+            var courserToPlayer = vMath.sub(cross.getPosition(), me.playerObject.pos);
             var courserDistance = vMath.len(courserToPlayer);
             
             var newDir = Math.atan2(courserToPlayer.y, courserToPlayer.x);
@@ -130,22 +95,22 @@ module.exports = class ClientLogic {
             var movement = {x:0, y:0};
 
             //W
-            if(this.keys["87"])
+            if(input.getKeyboard()["87"])
             {
                 movement = vMath.add(movement, {x:0, y:-1});
             }
             //S
-            if(this.keys["83"])
+            if(input.getKeyboard()["83"])
             {
                 movement = vMath.add(movement, {x:0, y:1});
             }
             //A
-            if(this.keys["68"])
+            if(input.getKeyboard()["68"])
             {
                 movement = vMath.add(movement, {x:1, y:0});
             }
             //D
-            if(this.keys["65"])
+            if(input.getKeyboard()["65"])
             {
                 movement = vMath.add(movement, {x:-1, y:0});
             }
@@ -163,7 +128,7 @@ module.exports = class ClientLogic {
                 this.tryChange(me, map, vMath.add(me.playerObject.pos, movementY));
             }
 
-            if(this.mouse.buttonsArray[0] && now - this.lastFireTime > this.fireRate)
+            if(input.getMouseButtons()[0] && now - this.lastFireTime > this.fireRate)
             {
                 this.lastFireTime = now;
                 riseEvent("fire");

@@ -21,4 +21,8 @@ module.exports = class{
     setPosition(pos){
         this.sprite.position = pos;
     }
+
+    getPosition(){
+        return this.sprite.position;
+    }
 }

@@ -78,6 +78,12 @@ module.exports = class MapObject{
         return this;
     }
 
+    makeDontEnlistCollidable()
+    {
+        this.dontEnlistAsCollidable = true;
+        return this;
+    }
+
     makeCollidablePoly(polygon)
     {
         this.collisionMode = "poly";

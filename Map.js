@@ -29,7 +29,7 @@ module.exports = class Map{
         else
             console.error("Error: obj already in map!");
 
-        if(obj.collisionMode != undefined)
+        if(obj.collisionMode != undefined && obj.dontEnlistAsCollidable != true)
             this.collidableIds[obj.id] = true;
     }
 
