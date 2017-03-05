@@ -9,6 +9,7 @@ var Cross = require("./Cross.js");
 var Camera = require("./Camera.js");
 var vMath = require("./VectorMath.js");
 var Input = require("./Input.js");
+var AudioBank = require("./AudioBank.js");
 
 //var io = require("socket.io");
 
@@ -23,6 +24,8 @@ function createNewIDFunction()
 var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
+
+    let audio = new AudioBank(["rifle_shot", "silenced", "reload"]);
 
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
@@ -86,6 +89,8 @@ $(document).ready(function(){
     });
 
     socket.on('create_projectile', function (msg) {
+        audio.play("silenced", 0.3);
+    
         projectileManager.addProjectile(data.map, msg.speed, msg.pos, msg.dir, msg.texture, msg.playerId);
     });
 
@@ -127,7 +132,8 @@ $(document).ready(function(){
                         socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
                     }, 0);
 
-                    //Dont know why, but here seems to be a bottleneck
+                    audio.play("silenced", 0.7);
+
                     projectileManager.addProjectile(data.map, 2.5, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });

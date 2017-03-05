@@ -6,5 +6,6 @@ module.exports = {
     serverToClientComRate:30,
     serverToClientFullUpdateRate:1,
     httpPort:63884,
-    socketPort:64003
+    socketPort:64003,
+    renderDistance: 10000
 };

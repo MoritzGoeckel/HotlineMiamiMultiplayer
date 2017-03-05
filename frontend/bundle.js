@@ -1,4 +1,24 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = class{
+
+    constructor(audiofiles){
+        this.bank = {};
+        for(let a in audiofiles){
+            this.bank[audiofiles[a]] = new Audio("sounds/" + audiofiles[a] + ".wav");
+        }
+    }
+
+    play(id, vol){
+        let sound = this.bank[id].cloneNode();
+        
+        if(vol != undefined)
+            sound.volume = vol;
+
+        sound.play();
+    }
+
+}
+},{}],2:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 
 module.exports = class{
@@ -30,7 +50,7 @@ module.exports = class{
         return this.pos;
     }
 }
-},{"./VectorMath.js":12}],2:[function(require,module,exports){
+},{"./VectorMath.js":13}],3:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 var gameplayConfig = require("./config/Gameplay.js");
 
@@ -173,15 +193,30 @@ module.exports = class ClientLogic {
         //Todo game logic / prediction
     }
 }
-},{"./VectorMath.js":12,"./config/Gameplay.js":14}],3:[function(require,module,exports){
+},{"./VectorMath.js":13,"./config/Gameplay.js":15}],4:[function(require,module,exports){
 module.exports = {
     movementSpeed:0.5, 
     minMouseDistanceMoveForward:35,
     playerCollisionRadius:100,
     bloodDespawnTimeout:5000,
-    projectileDespawnTimeout:5000
+    projectileDespawnTimeout:5000,
+    backColor: 0xFFFFFF,
+    guns: {
+        assult:{
+            sound_fire:"", sound_reload:"", reload_time:1000, clip_size:12, fire_rate:100, projectile_speed:2.5, projectile_demage:1, projectile_texture:"", fire_method:"normal"
+        },
+        mp:{
+            sound_fire:"", sound_reload:"", reload_time:1000, clip_size:12, fire_rate:100, projectile_speed:2.5, projectile_demage:1, projectile_texture:"", fire_method:"normal"
+        },
+        shotgun:{
+            sound_fire:"", sound_reload:"", reload_time:1000, clip_size:12, fire_rate:100, projectile_speed:2.5, projectile_demage:1, projectile_texture:"", fire_method:"spread"
+        },
+        pistol:{
+            sound_fire:"", sound_reload:"", reload_time:1000, clip_size:12, fire_rate:100, projectile_speed:2.5, projectile_demage:1, projectile_texture:"", fire_method:"normal"
+        }
+    }
 };
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = {
     serverTickrate:200, 
     clientTickrate:300,
@@ -190,9 +225,10 @@ module.exports = {
     serverToClientComRate:30,
     serverToClientFullUpdateRate:1,
     httpPort:63884,
-    socketPort:64003
+    socketPort:64003,
+    renderDistance: 10000
 };
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = class{
     constructor(textureNames, render){
 
@@ -221,7 +257,7 @@ module.exports = class{
         return this.sprite.position;
     }
 }
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 module.exports = class{
     constructor(owner, id)
     {
@@ -300,7 +336,7 @@ module.exports = class{
         return this;
     }
 }
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 module.exports = class{
 
     constructor(element){
@@ -378,7 +414,7 @@ module.exports = class{
         return this.keys;
     }
 }
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var vMath = require("./VectorMath.js");
 var MapObject = require("./MapObject.js");
 
@@ -492,7 +528,7 @@ module.exports = class Map{
         return deserializer;
     }
 }
-},{"./MapObject.js":9,"./VectorMath.js":12}],9:[function(require,module,exports){
+},{"./MapObject.js":10,"./VectorMath.js":13}],10:[function(require,module,exports){
 var SAT = require('sat');
 var vMath = require("./VectorMath.js");
 var DataObject = require("./DataObject.js");
@@ -680,7 +716,7 @@ module.exports = class MapObject{
         return this;
     }
 };
-},{"./DataObject.js":6,"./VectorMath.js":12,"sat":15}],10:[function(require,module,exports){
+},{"./DataObject.js":7,"./VectorMath.js":13,"sat":16}],11:[function(require,module,exports){
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
@@ -749,10 +785,12 @@ module.exports = class{
         }
     }
 }
-},{"./Map.js":8,"./MapObject.js":9,"./VectorMath.js":12,"./config/Gameplay":14}],11:[function(require,module,exports){
+},{"./Map.js":9,"./MapObject.js":10,"./VectorMath.js":13,"./config/Gameplay":15}],12:[function(require,module,exports){
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
 
+var TechnicalConfig = require("./Config/Technical.js");
+var GameplayConfig = require("./Config/Gameplay.js");
 
 module.exports = class Render{
     drawFrame(me, map, camera)
@@ -762,7 +800,7 @@ module.exports = class Render{
             var base = this;
             let playerObject = map.getObject(me.owned['playerMapObject']);
             
-            var objs = map.getObjectsNear(playerObject.pos, 2000);
+            var objs = map.getObjectsNear(playerObject.pos, TechnicalConfig.renderDistance);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(base.sprites[value.id] == undefined){
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
@@ -849,11 +887,11 @@ module.exports = class Render{
         });
         loader.load();
 
-        this.pixi.backgroundColor = 0xFFFFFF;
+        this.pixi.backgroundColor = GameplayConfig.backColor;
         this.sprites = {};
     }
 }
-},{"./MapObject.js":9,"./VectorMath.js":12}],12:[function(require,module,exports){
+},{"./Config/Gameplay.js":4,"./Config/Technical.js":5,"./MapObject.js":10,"./VectorMath.js":13}],13:[function(require,module,exports){
 module.exports = {
     add : function(vec1, vec2)
     {
@@ -894,7 +932,7 @@ module.exports = {
         return {x:-vec.y, y:vec.x};
     }
 }
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var ClientLogic = require("./ClientLogic.js");
 var Map = require("./Map.js");
 var MapObject = require("./MapObject.js");
@@ -906,6 +944,7 @@ var Cross = require("./Cross.js");
 var Camera = require("./Camera.js");
 var vMath = require("./VectorMath.js");
 var Input = require("./Input.js");
+var AudioBank = require("./AudioBank.js");
 
 //var io = require("socket.io");
 
@@ -920,6 +959,8 @@ function createNewIDFunction()
 var getNewId = createNewIDFunction();
 
 $(document).ready(function(){
+
+    let audio = new AudioBank(["rifle_shot", "silenced", "reload"]);
 
     var socket = io.connect('http:' + window.location.href.split(":")[1] + ':64003');
     var me;
@@ -983,6 +1024,8 @@ $(document).ready(function(){
     });
 
     socket.on('create_projectile', function (msg) {
+        audio.play("silenced", 0.3);
+    
         projectileManager.addProjectile(data.map, msg.speed, msg.pos, msg.dir, msg.texture, msg.playerId);
     });
 
@@ -1024,7 +1067,8 @@ $(document).ready(function(){
                         socket.emit("rise_event", {mode:"fire", pos:me.playerObject.pos, dir:me.playerObject.dir});
                     }, 0);
 
-                    //Dont know why, but here seems to be a bottleneck
+                    audio.play("silenced", 0.7);
+
                     projectileManager.addProjectile(data.map, 2.5, me.playerObject.pos, me.playerObject.dir, "bullet", me.id);
                 }
             });
@@ -1073,9 +1117,9 @@ $(document).ready(function(){
     }
 
 */
-},{"./Camera.js":1,"./ClientLogic.js":2,"./Config/Gameplay.js":3,"./Config/Technical.js":4,"./Cross.js":5,"./Input.js":7,"./Map.js":8,"./MapObject.js":9,"./ProjectileManager.js":10,"./Render.js":11,"./VectorMath.js":12}],14:[function(require,module,exports){
-arguments[4][3][0].apply(exports,arguments)
-},{"dup":3}],15:[function(require,module,exports){
+},{"./AudioBank.js":1,"./Camera.js":2,"./ClientLogic.js":3,"./Config/Gameplay.js":4,"./Config/Technical.js":5,"./Cross.js":6,"./Input.js":8,"./Map.js":9,"./MapObject.js":10,"./ProjectileManager.js":11,"./Render.js":12,"./VectorMath.js":13}],15:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"dup":4}],16:[function(require,module,exports){
 // Version 0.6.0 - Copyright 2012 - 2016 -  Jim Riecken <jimr@jimr.ca>
 //
 // Released under the MIT License - https://github.com/jriecken/sat-js
@@ -2065,4 +2109,4 @@ arguments[4][3][0].apply(exports,arguments)
   return SAT;
 }));
 
-},{}]},{},[13]);
+},{}]},{},[14]);

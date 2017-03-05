@@ -1,6 +1,8 @@
 var MapObject = require("./MapObject.js");
 var vMath = require("./VectorMath.js");
 
+var TechnicalConfig = require("./Config/Technical.js");
+var GameplayConfig = require("./Config/Gameplay.js");
 
 module.exports = class Render{
     drawFrame(me, map, camera)
@@ -10,7 +12,7 @@ module.exports = class Render{
             var base = this;
             let playerObject = map.getObject(me.owned['playerMapObject']);
             
-            var objs = map.getObjectsNear(playerObject.pos, 2000);
+            var objs = map.getObjectsNear(playerObject.pos, TechnicalConfig.renderDistance);
             objs.forEach(function(value){ //Todo: Every time?? optimization possible
                 if(base.sprites[value.id] == undefined){
                     base.sprites[value.id] = new PIXI.Sprite(base.resources[value.texture].texture);
@@ -97,7 +99,7 @@ module.exports = class Render{
         });
         loader.load();
 
-        this.pixi.backgroundColor = 0xFFFFFF;
+        this.pixi.backgroundColor = GameplayConfig.backColor;
         this.sprites = {};
     }
 }
